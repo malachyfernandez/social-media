@@ -58,7 +58,7 @@ const BeanPage = ({
 
     const addPost = (title: string, description: string) => {
         // random number
-        const postId = Math.floor(Math.random() * 1000000);
+        const postId = Math.floor(Math.random() * 1000000000);
 
         setPost({
             key: "posts",
