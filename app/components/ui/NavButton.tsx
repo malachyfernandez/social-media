@@ -3,10 +3,12 @@ import React from 'react';
 import AppButton from './AppButton';
 import PoppinsText from './PoppinsText';
 
+type PageState = "Profile" | "Friends" | "Feed";
+
 interface NavButtonProps {
-    buttonID: string;
-    pageState: string;
-    setPageState: (value: string) => void;
+    buttonID: PageState;
+    pageState: PageState;
+    setPageState: (value: PageState) => void;
 }
 
 const NavButton = ({ buttonID, pageState, setPageState }: NavButtonProps) => (

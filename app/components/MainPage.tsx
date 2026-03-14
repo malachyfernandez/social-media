@@ -69,8 +69,9 @@ const MainPage = ({
     const currentUserID = (userData?.value.userId || "LOADING...")
     const currentUserEmail = (userData?.value.email || "LOADING...")
 
-    
-    const [pageState, setPageState] = useState("Profile")
+    type PageState = "Profile" | "Friends" | "Feed";
+
+    const [pageState, setPageState] = useState<PageState>("Profile");
 
     return (
         <View className='justify-between w-full h-full'>
@@ -86,7 +87,6 @@ const MainPage = ({
 
                 <ContainerRow className='w-full justify-between'>
                     <NavButton buttonID="Profile" pageState={pageState} setPageState={setPageState} />
-                    <NavButton buttonID="Find friends" pageState={pageState} setPageState={setPageState} />
                     <NavButton buttonID="Friends" pageState={pageState} setPageState={setPageState} />
                     <NavButton buttonID="Feed" pageState={pageState} setPageState={setPageState} />
                 </ContainerRow>
@@ -95,9 +95,7 @@ const MainPage = ({
 
                 {pageState === "Profile" && <MyProfile currentUserID={currentUserID} />}
 
-                {pageState === "Find friends" && <FindFriends currentUserId={currentUserID} addFriend={addFriend} />}
-
-                {pageState === "Friends" && <MyFriends friendsList={friendsList.value || []} />}
+                {pageState === "Friends" && <MyFriends friendsList={friendsList.value || []} currentUserId={currentUserID} addFriend={addFriend} />}
 
                 {pageState === "Feed" && <Feed friendsList={friendsList.value || []} />}
 
