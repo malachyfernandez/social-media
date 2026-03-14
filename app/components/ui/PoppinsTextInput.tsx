@@ -36,7 +36,8 @@ const PoppinsTextInput = ({
     return (
         <TextInput 
             className={`${className}`}
-            style={{ fontFamily: fontsLoaded ? getFontFamily() : undefined, ...style }}
+            style={{ fontFamily: fontsLoaded ? getFontFamily() : undefined, color: 'white', ...style }}
+            placeholderTextColor="#9CA3AF"
             {...props}
         />
     );
