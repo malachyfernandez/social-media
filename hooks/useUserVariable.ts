@@ -66,187 +66,100 @@ export type UserVarOpStatusInfo<T> = {
 };
 
 /**
- * Persistent user-scoped state that feels like `useState`, but is backed by the server.
- *
- * This hook gives each authenticated user exactly one variable per `key`.
- * The variable is stored in Convex and automatically re-used across page loads,
- * sessions, and devices.
- *
- * -----------------------------------------------------------------------------
- * Core mental model
- * -----------------------------------------------------------------------------
- *
- * Think of this hook as:
- *
- * - "my persistent state for this key"
- *
- * not:
- *
- * - "a generic document query"
- *
- * Each user has at most one record for a given `key`.
- *
- * Example:
+ * Persistent single value for one user key.
  *
  * ```ts
- * const [profile, setProfile] = useUserVariable({
- *   key: "profile",
- *   defaultValue: {
- *     username: "malachy",
- *     name: "Malachy",
- *   },
- *   privacy: "PUBLIC",
- *   searchKeys: ["username", "name"],
- *   filterKey: "name",
- *   sortKey: "username",
+ * const [profile, setProfile] = useUserVariable<Profile>({
+ *   key: "profile", // REQUIRED: var key
+ *   defaultValue: { name: "", username: "" }, // create fallback
+ *   privacy: "PUBLIC", // access mode
+ *   filterKey: "username", // exact filter key
+ *   searchKeys: ["username", "name"], // search source keys
+ *   sortKey: "PROPERTY_LAST_MODIFIED", // stored sort key
  * });
  * ```
  *
- * On first creation, the hook creates the record with the provided config.
- * On later renders and later value writes, the existing stored config is
- * preserved by default unless `overwriteStoredConfig` is enabled.
+ * Output:
+ * - returns `[record, setValue]`
+ * - `record.value`: current UI value
+ * - `record.confirmedValue`: last server value
+ * - `record.state`: `{ isSyncing, lastOpStatus, lastOpStartedAt, lastOpTimedOutAt }`
+ * - `setValue(newValue)`: replaces the whole stored value
  *
- * -----------------------------------------------------------------------------
- * Returned value
- * -----------------------------------------------------------------------------
+ * Record shape:
+ * - `id` / `_id`
+ * - `key`
+ * - `userToken`
+ * - `value`
+ * - `privacy`
+ * - `filterKey` / `filterValue`
+ * - `searchKeys` / `searchValue`
+ * - `sortKey` / `sortValue`
+ * - `createdAt` / `lastModified`
+ * - `confirmedValue`
+ * - `state`
  *
- * The first tuple item is not just the raw `value`.
- * It is a rich object containing:
+ * Mental model:
+ * - this is "my one persistent value for this key"
+ * - each authenticated user gets at most one record per `key`
+ * - it feels like `useState`, but the backing record lives in Convex
  *
- * - `value` - the current UI value
- * - `confirmedValue` - the last server-confirmed value
- * - `id` / `_id` 
- * - `key` 
- * - `userToken` 
- * - `privacy` 
- * - `filterKey` 
- * - `filterValue` 
- * - `searchKeys` 
- * - `searchValue` 
- * - `sortKey` 
- * - `sortValue` 
- * - `createdAt` 
- * - `lastModified` 
- * - `state` 
+ * Auto-create:
+ * - if no record exists and `defaultValue` is provided, the hook creates it once
+ * - later loads reuse the stored record
  *
- * This means it behaves like state, but still exposes the full backing record.
+ * Stored config:
+ * - `privacy`
+ * - `filterKey`
+ * - `searchKeys`
+ * - `sortKey`
  *
- * -----------------------------------------------------------------------------
- * Config behavior: defaults-on-create vs overwrite-on-set
- * -----------------------------------------------------------------------------
+ * Derived server fields:
+ * - `filterValue`
+ * - `searchValue`
+ * - `sortValue`
  *
- * By default, the options:
+ * The client sends config keys.
+ * The backend derives the indexed values.
  *
- * - `privacy` 
- * - `filterKey` 
- * - `searchKeys` 
- * - `sortKey` 
- *
- * are treated as "defaults used when the record is first created".
- *
- * That means:
- *
- * 1. If the variable does not exist yet, those options are used to create it.
- * 2. If the variable already exists, normal `setValue(...)` calls keep the stored
- *    config instead of overwriting it.
- *
- * This is important for cases like privacy:
- *
- * ```ts
- * const [user, setUser] = useUserVariable({
- *   key: "user",
- *   defaultValue: { name: "Bob" },
- *   privacy: ["user_a", "user_b"],
- * });
- * ```
- *
- * If you later update privacy explicitly with `useUserVariablePrivacy(...)`,
- * future `setUser(...)` calls should not silently reset privacy back to the
- * original array.
- *
- * Global default:
- *
- * - `utils/userVarConfig.ts` -> `overwriteStoredConfigOnSet` 
- *
- * Per-hook override:
- *
- * - `overwriteStoredConfig` 
- *
- * -----------------------------------------------------------------------------
- * Derived server fields
- * -----------------------------------------------------------------------------
- *
- * The backend computes these fields automatically:
- *
- * - `filterValue` 
- * - `searchValue` 
- * - `sortValue` 
- *
- * from the stored `value` and the config:
- *
- * - `filterKey` 
- * - `searchKeys` 
- * - `sortKey` 
- *
- * The client does NOT send `filterValue`, `searchValue`, or `sortValue`.
- *
- * -----------------------------------------------------------------------------
- * Property references
- * -----------------------------------------------------------------------------
- *
- * `filterKey`, `searchKeys`, and `sortKey` may refer either to:
- *
- * 1. a field inside `value` 
- * 2. or a top-level record property using `PROPERTY_*` 
+ * Property references:
+ * - plain keys read from `value`
+ * - `PROPERTY_*` keys read from record metadata
  *
  * Examples:
- *
  * ```ts
- * filterKey: "color"                  // reads value.color
- * searchKeys: ["username", "name"]    // reads value.username and value.name
- * sortKey: "score"                    // reads value.score
- * sortKey: "PROPERTY_LAST_MODIFIED"   // reads record.lastModified
- * sortKey: "PROPERTY_CREATED_AT"      // reads record.createdAt
+ * filterKey: "color" // reads value.color
+ * searchKeys: ["username", "name"] // reads value fields
+ * sortKey: "score" // reads value.score
+ * sortKey: "PROPERTY_LAST_MODIFIED" // reads record.lastModified
+ * sortKey: "PROPERTY_CREATED_AT" // reads record.createdAt
  * ```
  *
- * Supported record-property references include:
+ * Supported `PROPERTY_*` references:
+ * - `PROPERTY_ID`
+ * - `PROPERTY__ID`
+ * - `PROPERTY_CREATED_AT`
+ * - `PROPERTY_TIME_CREATED`
+ * - `PROPERTY_FILTER_KEY`
+ * - `PROPERTY_FILTER_VALUE`
+ * - `PROPERTY_KEY`
+ * - `PROPERTY_LAST_MODIFIED`
+ * - `PROPERTY_PRIVACY`
+ * - `PROPERTY_SEARCH_KEYS`
+ * - `PROPERTY_SEARCH_VALUE`
+ * - `PROPERTY_SORT_KEY`
+ * - `PROPERTY_SORT_VALUE`
+ * - `PROPERTY_USER_TOKEN`
+ * - `PROPERTY_VALUE`
  *
- * - `PROPERTY_ID` 
- * - `PROPERTY__ID` 
- * - `PROPERTY_CREATED_AT` 
- * - `PROPERTY_TIME_CREATED` (legacy-friendly alias)
- * - `PROPERTY_FILTER_KEY` 
- * - `PROPERTY_FILTER_VALUE` 
- * - `PROPERTY_KEY` 
- * - `PROPERTY_LAST_MODIFIED` 
- * - `PROPERTY_PRIVACY` 
- * - `PROPERTY_SEARCH_KEYS` 
- * - `PROPERTY_SEARCH_VALUE` 
- * - `PROPERTY_SORT_KEY` 
- * - `PROPERTY_SORT_VALUE` 
- * - `PROPERTY_USER_TOKEN` 
- * - `PROPERTY_VALUE` 
+ * Self-reference rule:
+ * - `filterKey: "PROPERTY_FILTER_VALUE"` is ignored
+ * - `searchKeys: ["PROPERTY_SEARCH_VALUE"]` is ignored
+ * - `sortKey: "PROPERTY_SORT_VALUE"` is ignored
  *
- * Anti-recursion rule:
- *
- * If a config points to its own derived field, it is ignored.
- *
- * Examples:
- *
- * ```ts
- * filterKey: "PROPERTY_FILTER_KEY"    // ignored
- * sortKey: "PROPERTY_SORT_VALUE"      // ignored
- * searchKeys: ["PROPERTY_SEARCH_VALUE"] // ignored
- * ```
- *
- * -----------------------------------------------------------------------------
- * Setter semantics
- * -----------------------------------------------------------------------------
- *
- * The setter REPLACES the stored value.
- * It does not merge objects.
- *
- * Example:
+ * Setter behavior:
+ * - `setValue(...)` replaces the stored value
+ * - it does not merge objects
  *
  * ```ts
  * const [user, setUser] = useUserVariable({
@@ -255,102 +168,27 @@ export type UserVarOpStatusInfo<T> = {
  * });
  *
  * setUser({ name: "Alice" });
+ * // result: { name: "Alice" }
  * ```
  *
- * After the write, the value is:
+ * `overwriteStoredConfig` example:
  *
  * ```ts
- * { name: "Alice" }
- * ```
- *
- * `username` is gone unless you include it in the next value.
- *
- * -----------------------------------------------------------------------------
- * Optimistic writes and timeouts
- * -----------------------------------------------------------------------------
- *
- * Writes are optimistic.
- *
- * That means when you call `setValue(newValue)`, the UI updates immediately
- * before the server confirms the mutation.
- *
- * The hook tracks the most recent operation with:
- *
- * - `state.lastOpStatus` 
- * - `state.lastOpStartedAt` 
- * - `state.lastOpTimedOutAt` 
- *
- * Possible statuses:
- *
- * - `"idle"` - no recent operation
- * - `"pending"` - the optimistic write has been sent and is waiting
- * - `"confirmed"` - the server confirmed the latest pending write
- * - `"timed_out"` - the write was not confirmed before `timeoutMs` 
- *
- * `onOpStatusChange` is called whenever the latest operation changes status:
- *
- * - pending
- * - confirmed
- * - timed_out
- *
- * Example:
- *
- * ```ts
- * const [profile, setProfile] = useUserVariable({
+ * const [profile, setProfile] = useUserVariable<Profile>({
  *   key: "profile",
- *   defaultValue: { name: "Malachy" },
- *   onOpStatusChange(info) {
- *     console.log(info.status, info.optimisticValue, info.msSinceSet);
- *   },
+ *   defaultValue: { name: "", username: "" },
+ *   privacy: "PRIVATE",
+ *   filterKey: "username",
+ *   overwriteStoredConfig: true,
  * });
  * ```
  *
- * `info` contains:
+ * `overwriteStoredConfig` notes:
+ * - default behavior keeps the already stored config on later writes
+ * - use `overwriteStoredConfig: true` only when you intentionally want normal writes to replace stored config
+ * - the global default lives in `utils/userVarConfig.ts`
  *
- * - `key` 
- * - `status` 
- * - `optimisticValue` 
- * - `lastConfirmedValue` 
- * - `msSinceSet` 
- *
- * -----------------------------------------------------------------------------
- * Timeout behavior
- * -----------------------------------------------------------------------------
- *
- * `timeoutMs` controls how long to wait before a pending write is considered
- * timed out.
- *
- * Default:
- *
- * - `utils/userVarConfig.ts` -> `defaultTimeoutMs` 
- *
- * Per-hook override:
- *
- * - `timeoutMs` 
- *
- * `optimisticTimeoutBehavior` controls what happens if confirmation does not
- * arrive in time.
- *
- * - `"reset"` (default):
- *   - mark operation as timed out
- *   - UI value rolls back to the last confirmed value
- *   - if no confirmed value exists yet, it falls back to `defaultValue` 
- *
- * - `"keep"`:
- *   - mark operation as timed out
- *   - UI keeps showing the optimistic value
- *   - useful if you want to preserve local feel even through temporary failures
- *
- * Examples:
- *
- * ```ts
- * const [settings, setSettings] = useUserVariable({
- *   key: "settings",
- *   defaultValue: { darkMode: false },
- *   timeoutMs: 8000,
- *   optimisticTimeoutBehavior: "reset",
- * });
- * ```
+ * Timeout example:
  *
  * ```ts
  * const [draft, setDraft] = useUserVariable({
@@ -358,156 +196,20 @@ export type UserVarOpStatusInfo<T> = {
  *   defaultValue: { text: "" },
  *   timeoutMs: 10000,
  *   optimisticTimeoutBehavior: "keep",
- * });
- * ```
- *
- * Dev warnings for timeout behavior can be adjusted in:
- *
- * - `utils/userVarConfig.ts` 
- *
- * Relevant config flags:
- *
- * - `devWarningsEnabled` 
- * - `warnOnUserVarOpTimeout` 
- * - `logOnUserVarRollback` 
- * - `defaultTimeoutMs` 
- * - `overwriteStoredConfigOnSet` 
- *
- * -----------------------------------------------------------------------------
- * Auto-create behavior
- * -----------------------------------------------------------------------------
- *
- * If the variable does not exist yet and `defaultValue` is provided, the hook
- * automatically creates it once.
- *
- * Example:
- *
- * ```ts
- * const [count, setCount] = useUserVariable<number>({
- *   key: "count",
- *   defaultValue: 0,
- * });
- * ```
- *
- * First load for that user:
- *
- * - no record exists
- * - hook auto-creates `{ value: 0 }` 
- *
- * Later loads:
- *
- * - existing record is returned
- * - no duplicate creation occurs
- *
- * -----------------------------------------------------------------------------
- * Usage examples
- * -----------------------------------------------------------------------------
- *
- * 1. Minimal counter
- *
- * ```ts
- * const [count, setCount] = useUserVariable<number>({
- *   key: "count",
- *   defaultValue: 0,
- * });
- *
- * count.value;
- * count.confirmedValue;
- * count.state.lastOpStatus;
- *
- * setCount(count.value + 1);
- * ```
- *
- * 2. Public profile searchable by username and name
- *
- * ```ts
- * type Profile = {
- *   username: string;
- *   name: string;
- * };
- *
- * const [profile, setProfile] = useUserVariable<Profile>({
- *   key: "profile",
- *   defaultValue: {
- *     username: "malachy",
- *     name: "Malachy",
+ *   onOpStatusChange(info) {
+ *     console.log(info.status, info.optimisticValue, info.msSinceSet);
  *   },
- *   privacy: "PUBLIC",
- *   searchKeys: ["username", "name"],
- *   sortKey: "username",
  * });
  * ```
  *
- * 3. Public bean filterable by color and sorted by rating
- *
- * ```ts
- * type Bean = {
- *   name: string;
- *   color: string;
- *   rating: number;
- * };
- *
- * const [bean, setBean] = useUserVariable<Bean>({
- *   key: "favoriteBean",
- *   defaultValue: {
- *     name: "Lima",
- *     color: "Green",
- *     rating: 10,
- *   },
- *   privacy: "PUBLIC",
- *   filterKey: "color",
- *   searchKeys: ["name", "color"],
- *   sortKey: "rating",
- * });
- * ```
- *
- * 4. Sort by metadata instead of value fields
- *
- * ```ts
- * const [post, setPost] = useUserVariable({
- *   key: "latestPost",
- *   defaultValue: { title: "Hello" },
- *   privacy: "PUBLIC",
- *   sortKey: "PROPERTY_LAST_MODIFIED",
- * });
- * ```
- *
- * 5. Whitelist privacy
- *
- * ```ts
- * const [notes, setNotes] = useUserVariable({
- *   key: "notes",
- *   defaultValue: { text: "Secret" },
- *   privacy: ["user_a", "user_b"],
- * });
- * ```
- *
- * 6. Preserve stored privacy after explicit privacy changes
- *
- * ```ts
- * const [user, setUser] = useUserVariable({
- *   key: "user",
- *   defaultValue: { name: "Bob" },
- *   privacy: ["user_a", "user_b"],
- * });
- *
- * // Later, somewhere else:
- * // setUserPrivacy(["user_a"]);
- *
- * // Future setUser(...) calls do not overwrite stored privacy by default.
- * setUser({ name: "Alice" });
- * ```
- *
- * 7. Force config overwrite on every write
- *
- * ```ts
- * const [profile, setProfile] = useUserVariable({
- *   key: "profile",
- *   defaultValue: { name: "Bob" },
- *   privacy: "PUBLIC",
- *   overwriteStoredConfig: true,
- * });
- * ```
+ * Timeout notes:
+ * - writes are optimistic
+ * - `pending` means the UI updated before server confirmation
+ * - `confirmed` means the latest write was acknowledged
+ * - `timed_out` means confirmation missed `timeoutMs`
+ * - `"reset"` rolls UI back to the last confirmed value
+ * - `"keep"` leaves the optimistic value visible
+ * - defaults live in `utils/userVarConfig.ts`
  */
 export function useUserVariable<T>({
     key,

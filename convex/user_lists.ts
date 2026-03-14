@@ -307,6 +307,171 @@ async function getDefinitionByUserKey(
     .unique();
 }
 
+async function adjustUserListPublicCount(
+  ctx: any,
+  key: string,
+  filterValue: PrimitiveIndexValue | undefined,
+  delta: number
+) {
+  if (delta === 0) return;
+
+  const existing = await ctx.db
+    .query("user_list_public_counts")
+    .withIndex("by_key_filter", (q: any) =>
+      q.eq("key", key).eq("filterValue", filterValue)
+    )
+    .unique();
+
+  const nextCount = (existing?.count ?? 0) + delta;
+
+  if (nextCount <= 0) {
+    if (existing) {
+      await ctx.db.delete(existing._id);
+    }
+    return;
+  }
+
+  if (existing) {
+    await ctx.db.patch(existing._id, { count: nextCount });
+    return;
+  }
+
+  await ctx.db.insert("user_list_public_counts", {
+    key,
+    filterValue,
+    count: nextCount,
+  });
+}
+
+async function adjustUserListOwnerCount(
+  ctx: any,
+  ownerUserToken: string,
+  key: string,
+  filterValue: PrimitiveIndexValue | undefined,
+  accessScope: AccessScope,
+  delta: number
+) {
+  if (delta === 0) return;
+
+  const existing = await ctx.db
+    .query("user_list_owner_counts")
+    .withIndex("by_owner_key_filter_scope", (q: any) =>
+      q
+        .eq("ownerUserToken", ownerUserToken)
+        .eq("key", key)
+        .eq("filterValue", filterValue)
+        .eq("accessScope", accessScope)
+    )
+    .unique();
+
+  const nextCount = (existing?.count ?? 0) + delta;
+
+  if (nextCount <= 0) {
+    if (existing) {
+      await ctx.db.delete(existing._id);
+    }
+    return;
+  }
+
+  if (existing) {
+    await ctx.db.patch(existing._id, { count: nextCount });
+    return;
+  }
+
+  await ctx.db.insert("user_list_owner_counts", {
+    ownerUserToken,
+    key,
+    filterValue,
+    accessScope,
+    count: nextCount,
+  });
+}
+
+async function adjustUserListSharedCount(
+  ctx: any,
+  allowedUserId: string,
+  key: string,
+  filterValue: PrimitiveIndexValue | undefined,
+  delta: number
+) {
+  if (delta === 0) return;
+
+  const existing = await ctx.db
+    .query("user_list_shared_counts")
+    .withIndex("by_user_key_filter", (q: any) =>
+      q
+        .eq("allowedUserId", allowedUserId)
+        .eq("key", key)
+        .eq("filterValue", filterValue)
+    )
+    .unique();
+
+  const nextCount = (existing?.count ?? 0) + delta;
+
+  if (nextCount <= 0) {
+    if (existing) {
+      await ctx.db.delete(existing._id);
+    }
+    return;
+  }
+
+  if (existing) {
+    await ctx.db.patch(existing._id, { count: nextCount });
+    return;
+  }
+
+  await ctx.db.insert("user_list_shared_counts", {
+    allowedUserId,
+    key,
+    filterValue,
+    count: nextCount,
+  });
+}
+
+async function applyUserListCountDelta(
+  ctx: any,
+  {
+    ownerUserToken,
+    key,
+    filterValue,
+    privacy,
+    delta,
+  }: {
+    ownerUserToken: string;
+    key: string;
+    filterValue: PrimitiveIndexValue | undefined;
+    privacy: Privacy;
+    delta: number;
+  }
+) {
+  const accessScope = privacyToAccessScope(privacy);
+
+  if (accessScope === "PUBLIC") {
+    await adjustUserListPublicCount(ctx, key, filterValue, delta);
+  }
+
+  await adjustUserListOwnerCount(
+    ctx,
+    ownerUserToken,
+    key,
+    filterValue,
+    accessScope,
+    delta
+  );
+
+  if (typeof privacy === "object" && privacy !== null) {
+    for (const allowedUserId of privacy.allowList) {
+      await adjustUserListSharedCount(
+        ctx,
+        allowedUserId,
+        key,
+        filterValue,
+        delta
+      );
+    }
+  }
+}
+
 async function syncListPermissions(
   ctx: any,
   definitionId: Id<"user_list_definitions">,
@@ -426,17 +591,77 @@ export const get = query({
   },
 });
 
+export const length = query({
+  args: {
+    key: v.string(),
+    filterFor: v.union(v.string(), v.number(), v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    const viewerUserId = identity?.subject;
+
+    const publicCount = await ctx.db
+      .query("user_list_public_counts")
+      .withIndex("by_key_filter", (q) =>
+        q.eq("key", args.key).eq("filterValue", args.filterFor)
+      )
+      .unique();
+
+    let total = publicCount?.count ?? 0;
+
+    if (!viewerUserId) {
+      return total;
+    }
+
+    const ownPrivateCount = await ctx.db
+      .query("user_list_owner_counts")
+      .withIndex("by_owner_key_filter_scope", (q) =>
+        q
+          .eq("ownerUserToken", viewerUserId)
+          .eq("key", args.key)
+          .eq("filterValue", args.filterFor)
+          .eq("accessScope", "PRIVATE")
+      )
+      .unique();
+
+    const ownSharedCount = await ctx.db
+      .query("user_list_owner_counts")
+      .withIndex("by_owner_key_filter_scope", (q) =>
+        q
+          .eq("ownerUserToken", viewerUserId)
+          .eq("key", args.key)
+          .eq("filterValue", args.filterFor)
+          .eq("accessScope", "SHARED")
+      )
+      .unique();
+
+    const sharedCount = await ctx.db
+      .query("user_list_shared_counts")
+      .withIndex("by_user_key_filter", (q) =>
+        q
+          .eq("allowedUserId", viewerUserId)
+          .eq("key", args.key)
+          .eq("filterValue", args.filterFor)
+      )
+      .unique();
+
+    total += ownPrivateCount?.count ?? 0;
+    total += ownSharedCount?.count ?? 0;
+    total += sharedCount?.count ?? 0;
+
+    return total;
+  },
+});
+
 export const set = mutation({
   args: {
     key: v.string(),
     itemId: v.string(),
     value: v.any(),
-
     privacy: v.optional(privacyValidator),
     filterKey: v.optional(v.string()),
     searchKeys: v.optional(v.array(v.string())),
     sortKey: v.optional(v.string()),
-
     overwriteStoredConfig: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
@@ -474,6 +699,16 @@ export const set = mutation({
       !sameStringArray(existingDefinition.searchKeys, nextSearchKeys) ||
       existingDefinition.sortKey !== nextSortKey;
 
+    const previousItems =
+      existingDefinition && definitionConfigChanged
+        ? await ctx.db
+            .query("user_lists")
+            .withIndex("by_user_key_sort", (q) =>
+              q.eq("userToken", userToken).eq("key", args.key)
+            )
+            .collect()
+        : null;
+
     let definitionId = existingDefinition?._id;
 
     if (!existingDefinition) {
@@ -501,7 +736,7 @@ export const set = mutation({
       throw new Error("Failed to resolve list definition id");
     }
 
-    const finalDefinition = await ctx.db.get(definitionId) as any;
+    const finalDefinition = (await ctx.db.get(definitionId)) as any;
     if (!finalDefinition) {
       throw new Error("Failed to load final list definition");
     }
@@ -524,6 +759,14 @@ export const set = mutation({
       )
       .unique();
 
+    const previousSnapshot =
+      existingItem && !definitionConfigChanged
+        ? {
+            filterValue: existingItem.filterValue as PrimitiveIndexValue | undefined,
+            privacy: (existingDefinition?.privacy ?? finalDefinition.privacy) as Privacy,
+          }
+        : null;
+
     const itemCreatedAt = existingItem?.createdAt ?? now;
     const accessScope = privacyToAccessScope(finalDefinition.privacy);
 
@@ -543,12 +786,10 @@ export const set = mutation({
     };
 
     const filterValue = buildFilterValue(baseContext);
-
     const searchValue = buildSearchValue({
       ...baseContext,
       filterValue,
     });
-
     const sortValue = buildSortValue({
       ...baseContext,
       filterValue,
@@ -587,17 +828,80 @@ export const set = mutation({
       throw new Error("Failed to resolve list item id");
     }
 
-    // If definition config changed and this is not the first definition creation,
-    // all existing items must be reindexed to stay consistent.
     if (existingDefinition && definitionConfigChanged) {
-      const updatedDefinition = await ctx.db.get(definitionId);
+      const updatedDefinition = (await ctx.db.get(definitionId)) as any;
       if (updatedDefinition) {
         await reindexItemsForDefinition(ctx, updatedDefinition);
+
+        if (previousItems) {
+          for (const item of previousItems) {
+            await applyUserListCountDelta(ctx, {
+              ownerUserToken: userToken,
+              key: args.key,
+              filterValue: item.filterValue as PrimitiveIndexValue | undefined,
+              privacy: existingDefinition.privacy as Privacy,
+              delta: -1,
+            });
+          }
+        }
+
+        const currentItems = await ctx.db
+          .query("user_lists")
+          .withIndex("by_user_key_sort", (q) =>
+            q.eq("userToken", userToken).eq("key", args.key)
+          )
+          .collect();
+
+        for (const item of currentItems) {
+          await applyUserListCountDelta(ctx, {
+            ownerUserToken: userToken,
+            key: args.key,
+            filterValue: item.filterValue as PrimitiveIndexValue | undefined,
+            privacy: updatedDefinition.privacy as Privacy,
+            delta: 1,
+          });
+        }
       }
     }
 
     const finalItem = await ctx.db.get(itemId);
-    const latestDefinition = await ctx.db.get(definitionId);
+    const latestDefinition = (await ctx.db.get(definitionId)) as any;
+
+    if (
+      finalItem &&
+      latestDefinition &&
+      (!existingDefinition || !definitionConfigChanged)
+    ) {
+      const nextSnapshot = {
+        filterValue: finalItem.filterValue as PrimitiveIndexValue | undefined,
+        privacy: latestDefinition.privacy as Privacy,
+      };
+
+      const didCountChange =
+        !previousSnapshot ||
+        previousSnapshot.filterValue !== nextSnapshot.filterValue ||
+        !samePrivacy(previousSnapshot.privacy, nextSnapshot.privacy);
+
+      if (didCountChange) {
+        if (previousSnapshot) {
+          await applyUserListCountDelta(ctx, {
+            ownerUserToken: userToken,
+            key: args.key,
+            filterValue: previousSnapshot.filterValue,
+            privacy: previousSnapshot.privacy,
+            delta: -1,
+          });
+        }
+
+        await applyUserListCountDelta(ctx, {
+          ownerUserToken: userToken,
+          key: args.key,
+          filterValue: nextSnapshot.filterValue,
+          privacy: nextSnapshot.privacy,
+          delta: 1,
+        });
+      }
+    }
 
     return shapeListRecord(finalItem, latestDefinition);
   },
@@ -613,6 +917,7 @@ export const remove = mutation({
     if (!identity) throw new Error("Unauthorized");
 
     const userToken = identity.subject;
+    const definition = await getDefinitionByUserKey(ctx, userToken, args.key);
 
     const item = await ctx.db
       .query("user_lists")
@@ -626,6 +931,16 @@ export const remove = mutation({
 
     if (!item) {
       return { success: true };
+    }
+
+    if (definition) {
+      await applyUserListCountDelta(ctx, {
+        ownerUserToken: userToken,
+        key: args.key,
+        filterValue: item.filterValue as PrimitiveIndexValue | undefined,
+        privacy: definition.privacy as Privacy,
+        delta: -1,
+      });
     }
 
     await ctx.db.delete(item._id);
@@ -655,6 +970,23 @@ export const updatePrivacy = mutation({
     const nextPrivacy = normalizePrivacy(args.privacy);
     const now = Date.now();
 
+    const items = await ctx.db
+      .query("user_lists")
+      .withIndex("by_user_key_sort", (q) =>
+        q.eq("userToken", userToken).eq("key", args.key)
+      )
+      .collect();
+
+    for (const item of items) {
+      await applyUserListCountDelta(ctx, {
+        ownerUserToken: userToken,
+        key: args.key,
+        filterValue: item.filterValue as PrimitiveIndexValue | undefined,
+        privacy: definition.privacy as Privacy,
+        delta: -1,
+      });
+    }
+
     await ctx.db.patch(definition._id, {
       privacy: nextPrivacy,
       lastModified: now,
@@ -676,6 +1008,16 @@ export const updatePrivacy = mutation({
     // Reindex all items because PROPERTY_PRIVACY may be used in
     // filter/search/sort config and accessScope definitely changes.
     await reindexItemsForDefinition(ctx, finalDefinition);
+
+    for (const item of items) {
+      await applyUserListCountDelta(ctx, {
+        ownerUserToken: userToken,
+        key: args.key,
+        filterValue: item.filterValue as PrimitiveIndexValue | undefined,
+        privacy: nextPrivacy,
+        delta: 1,
+      });
+    }
 
     return finalDefinition;
   },

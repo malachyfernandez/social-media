@@ -3,11 +3,38 @@ import { api } from "../convex/_generated/api";
 import type { Privacy } from "./useUserVariable";
 
 /**
- * Explicitly update privacy for one user variable without changing its value.
+ * Change one variable's access mode only.
  *
- * Usage:
+ * ```ts
  * const setPrivacy = useUserVariablePrivacy();
- * setPrivacy({ key: "profile", privacy: "PUBLIC" });
+ *
+ * setPrivacy({
+ *   key: "profile", // REQUIRED: var key
+ *   privacy: "PUBLIC", // REQUIRED: access mode
+ * });
+ * ```
+ *
+ * Output:
+ * - returns a Convex mutation promise
+ * - only updates `privacy`
+ * - keeps stored `value` unchanged
+ *
+ * Allowlist example:
+ *
+ * ```ts
+ * const setPrivacy = useUserVariablePrivacy();
+ *
+ * setPrivacy({
+ *   key: "profile",
+ *   privacy: ["user_a", "user_b"],
+ * });
+ * ```
+ *
+ * Allowlist notes:
+ * - array input becomes `{ allowList: [...] }` on the backend
+ * - owner still keeps access
+ * - only listed users gain access
+ * - later `setValue(...)` calls keep that stored privacy unless config overwrite is enabled
  */
 export function useUserVariablePrivacy() {
   const mutation = useMutation(api.user_vars.updatePrivacy).withOptimisticUpdate(

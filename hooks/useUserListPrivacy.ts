@@ -3,13 +3,38 @@ import { api } from "../convex/_generated/api";
 import type { Privacy } from "./useUserList";
 
 /**
- * Update privacy for an entire list.
+ * Change one whole list's access mode.
  *
- * Privacy is list-level, not item-level.
- *
- * Usage:
+ * ```ts
  * const setListPrivacy = useUserListPrivacy();
- * setListPrivacy({ key: "posts", privacy: "PUBLIC" });
+ *
+ * setListPrivacy({
+ *   key: "posts", // REQUIRED: list key
+ *   privacy: "PUBLIC", // REQUIRED: access mode
+ * });
+ * ```
+ *
+ * Output:
+ * - returns a Convex mutation promise
+ * - applies to every item in that list
+ * - updates future getter visibility too
+ *
+ * Allowlist example:
+ *
+ * ```ts
+ * const setListPrivacy = useUserListPrivacy();
+ *
+ * setListPrivacy({
+ *   key: "posts",
+ *   privacy: ["user_a", "user_b"],
+ * });
+ * ```
+ *
+ * Allowlist notes:
+ * - array input becomes `{ allowList: [...] }` on the backend
+ * - owner still keeps access
+ * - every item in that list follows the same allowlist
+ * - changing list privacy can change public/shared counts and getter visibility
  */
 export function useUserListPrivacy() {
   const mutation = useMutation(api.user_lists.updatePrivacy);

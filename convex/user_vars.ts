@@ -1,9 +1,9 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { Doc, Id } from "./_generated/dataModel";
 
 type PrimitiveIndexValue = string | number | boolean;
 type Privacy = "PUBLIC" | "PRIVATE" | { allowList: string[] };
+type AccessScope = "PUBLIC" | "PRIVATE" | "SHARED";
 
 const DEFAULT_SORT_KEY = "PROPERTY_LAST_MODIFIED";
 
@@ -27,6 +27,39 @@ function normalizePrivacy(privacy: Privacy): Privacy {
     );
 
     return { allowList: unique };
+}
+
+function privacyToAccessScope(privacy: Privacy): AccessScope {
+    if (privacy === "PUBLIC") return "PUBLIC";
+    if (privacy === "PRIVATE") return "PRIVATE";
+    return "SHARED";
+}
+
+function sameStringArray(a?: string[], b?: string[]) {
+    const left = a ?? [];
+    const right = b ?? [];
+
+    if (left.length !== right.length) return false;
+
+    for (let i = 0; i < left.length; i += 1) {
+        if (left[i] !== right[i]) return false;
+    }
+
+    return true;
+}
+
+function samePrivacy(a?: Privacy, b?: Privacy) {
+    if (!a || !b) return a === b;
+
+    if (a === "PUBLIC" || a === "PRIVATE") {
+        return a === b;
+    }
+
+    if (b === "PUBLIC" || b === "PRIVATE") {
+        return false;
+    }
+
+    return sameStringArray(a.allowList, b.allowList);
 }
 
 function shouldIgnoreSelfReference(
@@ -238,6 +271,171 @@ function shapeRecord(record: any) {
     };
 }
 
+async function adjustUserVarPublicCount(
+    ctx: any,
+    key: string,
+    filterValue: PrimitiveIndexValue | undefined,
+    delta: number
+) {
+    if (delta === 0) return;
+
+    const existing = await ctx.db
+        .query("user_var_public_counts")
+        .withIndex("by_key_filter", (q: any) =>
+            q.eq("key", key).eq("filterValue", filterValue)
+        )
+        .unique();
+
+    const nextCount = (existing?.count ?? 0) + delta;
+
+    if (nextCount <= 0) {
+        if (existing) {
+            await ctx.db.delete(existing._id);
+        }
+        return;
+    }
+
+    if (existing) {
+        await ctx.db.patch(existing._id, { count: nextCount });
+        return;
+    }
+
+    await ctx.db.insert("user_var_public_counts", {
+        key,
+        filterValue,
+        count: nextCount,
+    });
+}
+
+async function adjustUserVarOwnerCount(
+    ctx: any,
+    ownerUserToken: string,
+    key: string,
+    filterValue: PrimitiveIndexValue | undefined,
+    accessScope: AccessScope,
+    delta: number
+) {
+    if (delta === 0) return;
+
+    const existing = await ctx.db
+        .query("user_var_owner_counts")
+        .withIndex("by_owner_key_filter_scope", (q: any) =>
+            q
+                .eq("ownerUserToken", ownerUserToken)
+                .eq("key", key)
+                .eq("filterValue", filterValue)
+                .eq("accessScope", accessScope)
+        )
+        .unique();
+
+    const nextCount = (existing?.count ?? 0) + delta;
+
+    if (nextCount <= 0) {
+        if (existing) {
+            await ctx.db.delete(existing._id);
+        }
+        return;
+    }
+
+    if (existing) {
+        await ctx.db.patch(existing._id, { count: nextCount });
+        return;
+    }
+
+    await ctx.db.insert("user_var_owner_counts", {
+        ownerUserToken,
+        key,
+        filterValue,
+        accessScope,
+        count: nextCount,
+    });
+}
+
+async function adjustUserVarSharedCount(
+    ctx: any,
+    allowedUserId: string,
+    key: string,
+    filterValue: PrimitiveIndexValue | undefined,
+    delta: number
+) {
+    if (delta === 0) return;
+
+    const existing = await ctx.db
+        .query("user_var_shared_counts")
+        .withIndex("by_user_key_filter", (q: any) =>
+            q
+                .eq("allowedUserId", allowedUserId)
+                .eq("key", key)
+                .eq("filterValue", filterValue)
+        )
+        .unique();
+
+    const nextCount = (existing?.count ?? 0) + delta;
+
+    if (nextCount <= 0) {
+        if (existing) {
+            await ctx.db.delete(existing._id);
+        }
+        return;
+    }
+
+    if (existing) {
+        await ctx.db.patch(existing._id, { count: nextCount });
+        return;
+    }
+
+    await ctx.db.insert("user_var_shared_counts", {
+        allowedUserId,
+        key,
+        filterValue,
+        count: nextCount,
+    });
+}
+
+async function applyUserVarCountDelta(
+    ctx: any,
+    {
+        ownerUserToken,
+        key,
+        filterValue,
+        privacy,
+        delta,
+    }: {
+        ownerUserToken: string;
+        key: string;
+        filterValue: PrimitiveIndexValue | undefined;
+        privacy: Privacy;
+        delta: number;
+    }
+) {
+    const accessScope = privacyToAccessScope(privacy);
+
+    if (accessScope === "PUBLIC") {
+        await adjustUserVarPublicCount(ctx, key, filterValue, delta);
+    }
+
+    await adjustUserVarOwnerCount(
+        ctx,
+        ownerUserToken,
+        key,
+        filterValue,
+        accessScope,
+        delta
+    );
+
+    if (typeof privacy === "object" && privacy !== null) {
+        for (const allowedUserId of privacy.allowList) {
+            await adjustUserVarSharedCount(
+                ctx,
+                allowedUserId,
+                key,
+                filterValue,
+                delta
+            );
+        }
+    }
+}
+
 async function syncPermissions(
     ctx: any,
     varId: any,
@@ -297,6 +495,68 @@ export const get = query({
     },
 });
 
+export const length = query({
+    args: {
+        key: v.string(),
+        filterFor: v.union(v.string(), v.number(), v.boolean()),
+    },
+    handler: async (ctx, args) => {
+        const identity = await ctx.auth.getUserIdentity();
+        const viewerUserId = identity?.subject;
+
+        const publicCount = await ctx.db
+            .query("user_var_public_counts")
+            .withIndex("by_key_filter", (q) =>
+                q.eq("key", args.key).eq("filterValue", args.filterFor)
+            )
+            .unique();
+
+        let total = publicCount?.count ?? 0;
+
+        if (!viewerUserId) {
+            return total;
+        }
+
+        const ownPrivateCount = await ctx.db
+            .query("user_var_owner_counts")
+            .withIndex("by_owner_key_filter_scope", (q) =>
+                q
+                    .eq("ownerUserToken", viewerUserId)
+                    .eq("key", args.key)
+                    .eq("filterValue", args.filterFor)
+                    .eq("accessScope", "PRIVATE")
+            )
+            .unique();
+
+        const ownSharedCount = await ctx.db
+            .query("user_var_owner_counts")
+            .withIndex("by_owner_key_filter_scope", (q) =>
+                q
+                    .eq("ownerUserToken", viewerUserId)
+                    .eq("key", args.key)
+                    .eq("filterValue", args.filterFor)
+                    .eq("accessScope", "SHARED")
+            )
+            .unique();
+
+        const sharedCount = await ctx.db
+            .query("user_var_shared_counts")
+            .withIndex("by_user_key_filter", (q) =>
+                q
+                    .eq("allowedUserId", viewerUserId)
+                    .eq("key", args.key)
+                    .eq("filterValue", args.filterFor)
+            )
+            .unique();
+
+        total += ownPrivateCount?.count ?? 0;
+        total += ownSharedCount?.count ?? 0;
+        total += sharedCount?.count ?? 0;
+
+        return total;
+    },
+});
+
 export const set = mutation({
     args: {
         key: v.string(),
@@ -328,6 +588,13 @@ export const set = mutation({
                 q.eq("userToken", userToken).eq("key", args.key)
             )
             .unique();
+
+        const previousSnapshot = existing
+            ? {
+                  filterValue: existing.filterValue as PrimitiveIndexValue | undefined,
+                  privacy: existing.privacy as Privacy,
+              }
+            : null;
 
         const now = Date.now();
         const createdAt = existing?.createdAt ?? now;
@@ -418,6 +685,40 @@ export const set = mutation({
         await syncPermissions(ctx, varId, nextPrivacy);
 
         const finalRecord = await ctx.db.get(varId);
+        if (!finalRecord) {
+            throw new Error("Failed to load final variable");
+        }
+
+        const nextSnapshot = {
+            filterValue: finalRecord.filterValue as PrimitiveIndexValue | undefined,
+            privacy: finalRecord.privacy as Privacy,
+        };
+
+        const didCountChange =
+            !previousSnapshot ||
+            previousSnapshot.filterValue !== nextSnapshot.filterValue ||
+            !samePrivacy(previousSnapshot.privacy, nextSnapshot.privacy);
+
+        if (didCountChange) {
+            if (previousSnapshot) {
+                await applyUserVarCountDelta(ctx, {
+                    ownerUserToken: userToken,
+                    key: args.key,
+                    filterValue: previousSnapshot.filterValue,
+                    privacy: previousSnapshot.privacy,
+                    delta: -1,
+                });
+            }
+
+            await applyUserVarCountDelta(ctx, {
+                ownerUserToken: userToken,
+                key: args.key,
+                filterValue: nextSnapshot.filterValue,
+                privacy: nextSnapshot.privacy,
+                delta: 1,
+            });
+        }
+
         return shapeRecord(finalRecord);
     },
 });
@@ -446,9 +747,14 @@ export const updatePrivacy = mutation({
 
         if (!record) {
             throw new Error(
-                `Cannot update privacy for key="${args.key}" because the variable does not exist yet.` 
+                `Cannot update privacy for key="${args.key}" because the variable does not exist yet.`
             );
         }
+
+        const previousSnapshot = {
+            filterValue: record.filterValue as PrimitiveIndexValue | undefined,
+            privacy: record.privacy as Privacy,
+        };
 
         const nextPrivacy = normalizePrivacy(args.privacy);
 
@@ -459,6 +765,28 @@ export const updatePrivacy = mutation({
         await syncPermissions(ctx, record._id, nextPrivacy);
 
         const finalRecord = await ctx.db.get(record._id);
+        if (!finalRecord) {
+            throw new Error("Failed to load updated variable");
+        }
+
+        if (!samePrivacy(previousSnapshot.privacy, nextPrivacy)) {
+            await applyUserVarCountDelta(ctx, {
+                ownerUserToken: userToken,
+                key: args.key,
+                filterValue: previousSnapshot.filterValue,
+                privacy: previousSnapshot.privacy,
+                delta: -1,
+            });
+
+            await applyUserVarCountDelta(ctx, {
+                ownerUserToken: userToken,
+                key: args.key,
+                filterValue: finalRecord.filterValue as PrimitiveIndexValue | undefined,
+                privacy: finalRecord.privacy as Privacy,
+                delta: 1,
+            });
+        }
+
         return shapeRecord(finalRecord);
     },
 });

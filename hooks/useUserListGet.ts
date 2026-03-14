@@ -17,16 +17,36 @@ interface UseUserListGetOptions {
 /**
  * Query accessible list items by key.
  *
- * This is the multi-user read companion to `useUserList(...)`.
+ * ```ts
+ * const posts = useUserListGet<Post>({
+ *   key: "posts", // REQUIRED: list key
+ *   userIds: friendsList, // owner ids only
+ *   filterFor: "published", // exact filter value
+ *   returnTop: 20, // page size
+ * });
+ * ```
  *
- * Supports:
- * - exact item lookup with `itemId` 
- * - search with `searchFor` 
- * - exact filter with `filterFor` 
- * - restricting by `userIds` 
- * - forward pagination with `startAfter` 
+ * Output:
+ * - returns `UserListRecord<T>[] | undefined`
+ * - `undefined` while loading
+ * - each row includes item fields plus list config fields like `privacy`, `filterKey`, `searchKeys`, and `sortKey`
  *
- * `startAfter` should be the `id` of the last record from the previous page.
+ * Mental model:
+ * - `useUserList(...)` is "my one item in my one list"
+ * - `useUserListGet(...)` is "many accessible items from many lists with this key"
+ *
+ * Query inputs:
+ * - `itemId`: exact item lookup
+ * - `searchFor`: matches stored `searchValue`
+ * - `filterFor`: exact match against stored `filterValue`
+ * - `userIds`: explicit owner filter
+ * - `returnTop`: page size
+ * - `startAfter`: pass the previous last `id` for forward paging
+ *
+ * Important:
+ * - sorting comes from the stored `sortKey` on each owner's list definition
+ * - result order is stored `sortValue` desc, then `lastModified` desc
+ * - for exact constant-time counts, use `useUserListLength({ key, filterFor })`
  */
 export function useUserListGet<TValue = any>({
   key,

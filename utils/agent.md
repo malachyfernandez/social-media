@@ -1,361 +1,232 @@
 # BeanJar Development Guide
 
-This guide covers the two data systems in BeanJar: **useUserVariable** (single values) and **useUserList** (multiple items).
+Quick reference for the BeanJar user data hooks.
 
----
+## What to use
 
-## 🏗️ Architecture Overview
+- `useUserVariable`: one value per user + key.
+- `useUserList`: many items per user + key (by `itemId`).
+- `useUserVariableGet` / `useUserListGet`: read accessible records across users.
+- `useUserVariablePrivacy` / `useUserListPrivacy`: update privacy only.
+- `useUserListSet`: upsert without mounting per-item hook.
+- `useUserListRemove`: remove one list item.
 
-Both systems are built on Convex with optimistic UI updates, privacy controls, and real-time sync.
+## Core patterns
 
-### Key Concepts
-- **User-scoped**: All data belongs to authenticated users
-- **Optimistic UI**: Updates appear instantly, rollback on failure
-- **Privacy-first**: Everything is private until explicitly shared
-- **Real-time**: Changes sync across all connected clients
+### `useUserVariable`
 
----
+Persistent single value per user key.
 
-## 🔧 useUserVariable System (Single Values)
-
-Perfect for: User settings, profiles, preferences, single records
-
-### Core Hooks
-
-#### `useUserVariable<T>(options)`
-Main hook for user-scoped variables.
-
-```typescript
-const [profile, setProfile] = useUserVariable<ProfileType>({
-  key: "profile",
-  defaultValue: { name: "", bio: "" },
-  privacy: "PUBLIC",
-  searchKeys: ["name", "bio"],
-  filterKey: "name",
-  sortKey: "name"
+```ts
+const [profile, setProfile] = useUserVariable<Profile>({
+  key: "profile", // REQUIRED: var key
+  defaultValue: { name: "", username: "" }, // create fallback
+  privacy: "PUBLIC", // access mode
+  filterKey: "username", // exact filter key
+  searchKeys: ["username", "name"], // text index keys
+  sortKey: "PROPERTY_LAST_MODIFIED", // result order key
+  overwriteStoredConfig: false, // keep saved config
+  onOpStatusChange: (info) => {}, // op status callback
 });
 ```
 
-**Features:**
-- Uniqueness: `userToken + key`
-- Auto-creates if `defaultValue` provided
-- Optimistic updates with timeout handling
-- Privacy: `"PUBLIC"`, `"PRIVATE"`, `string[]` (whitelist)
+Output:
+- `[record, setValue]`
+- `record.value`: current UI value
+- `record.confirmedValue`: last server value
+- `record.state`: sync + op status metadata
 
-#### `useUserVariableGet<T>(options)`
-Read multiple users' variables.
+### `useUserList`
 
-```typescript
-const profiles = useUserVariableGet<ProfileType>({
-  key: "profile",
-  searchFor: "john",
-  filterFor: "active",
-  userIds: ["user1", "user2"],
-  returnTop: 20,
-  startAfter: "lastRecordId" // pagination
+Persistent single item in a keyed list.
+
+```ts
+const [post, setPost] = useUserList<Post>({
+  key: "posts", // REQUIRED: list key
+  itemId: "post_123", // REQUIRED: item id
+  defaultValue: { title: "", body: "" }, // create fallback
+  privacy: "PUBLIC", // list access mode
+  filterKey: "status", // exact filter key
+  searchKeys: ["title", "body"], // text index keys
+  sortKey: "PROPERTY_LAST_MODIFIED", // result order key
+  overwriteStoredConfig: false, // keep saved config
+  onOpStatusChange: (info) => {}, // op status callback
 });
 ```
 
-**Features:**
-- Multi-user access with privacy enforcement
-- Search, filter, and pagination support
-- Returns array of accessible records
+Output:
+- `[record, setValue]`
+- same record-state shape as `useUserVariable`
+- list uniqueness is `userToken + key + itemId`
 
-#### `useUserVariablePrivacy()`
-Update privacy for variables.
+### `useUserVariableGet`
 
-```typescript
+Reads accessible variable rows by key.
+
+```ts
+const profiles = useUserVariableGet<Profile>({
+  key: "profile", // REQUIRED: var key
+  searchFor: "ali", // text search value
+  filterFor: "admin", // exact filter value
+  userIds: friendIds, // user-id filter
+  returnTop: 10, // page size
+  startAfter: cursorId, // pagination cursor
+});
+```
+
+Output:
+- record array or `undefined` while loading
+- includes full variable rows
+- sorting comes from stored `sortKey`
+
+### `useUserListGet`
+
+Reads accessible list rows by key.
+
+```ts
+const posts = useUserListGet<Post>({
+  key: "posts", // REQUIRED: list key
+  itemId: "post_123", // exact item id
+  searchFor: "react", // text search value
+  filterFor: "published", // exact filter value
+  userIds: friendIds, // user-id filter
+  returnTop: 10, // page size
+  startAfter: cursorId, // pagination cursor
+});
+```
+
+Output:
+- record array or `undefined` while loading
+- includes item fields plus list config fields
+- sorting comes from stored `sortKey`
+
+### `useUserVariableLength`
+
+Exact accessible variable count for one `key + filterFor`.
+
+```ts
+const totalProfiles = useUserVariableLength({
+  key: "profile", // REQUIRED: var key
+  filterFor: "admin", // REQUIRED: exact filter value
+});
+```
+
+Output:
+- exact count or `undefined` while loading
+- constant-time count path
+- only supports `key + filterFor`
+
+### `useUserListLength`
+
+Exact accessible list-item count for one `key + filterFor`.
+
+```ts
+const totalComments = useUserListLength({
+  key: "comments", // REQUIRED: list key
+  filterFor: postId, // REQUIRED: exact filter value
+});
+```
+
+Output:
+- exact count or `undefined` while loading
+- constant-time count path
+- only supports `key + filterFor`
+
+### `useUserListSet`
+
+Upserts one list item.
+
+```ts
+const setPost = useUserListSet<Post>();
+
+setPost({
+  key: "posts", // REQUIRED: list key
+  itemId: "post_123", // REQUIRED: item id
+  value: { title: "Hi", body: "..." }, // REQUIRED: item value
+  privacy: "PUBLIC", // access mode
+  filterKey: "status", // exact filter key
+  searchKeys: ["title", "body"], // text index keys
+  sortKey: "PROPERTY_LAST_MODIFIED", // result order key
+  overwriteStoredConfig: false, // keep saved config
+});
+```
+
+Output:
+- Convex mutation promise
+- create if missing, replace if existing
+
+### `useUserVariablePrivacy`
+
+Updates one variable privacy only.
+
+```ts
 const setPrivacy = useUserVariablePrivacy();
 
-// Make profile public
-setPrivacy({ 
-  key: "profile", 
-  privacy: "PUBLIC" 
-});
-
-// Share with specific users
-setPrivacy({ 
-  key: "profile", 
-  privacy: ["user1", "user2"] 
+setPrivacy({
+  key: "profile", // REQUIRED: var key
+  privacy: "PUBLIC", // REQUIRED: access mode
 });
 ```
 
----
+Output:
+- Convex mutation promise
+- does not change stored `value`
 
-## 📋 useUserList System (Multiple Items)
+### `useUserListPrivacy`
 
-Perfect for: Posts, inventory, bookmarks, comments, any collection
+Updates privacy for one whole list.
 
-### Core Hooks
-
-#### `useUserList<T>(options)`
-Main hook for individual list items.
-
-```typescript
-const [post, setPost] = useUserList<PostType>({
-  key: "posts",
-  itemId: "post_123",
-  defaultValue: { title: "", body: "", rank: 0 },
-  privacy: "PUBLIC",
-  searchKeys: ["title", "body", "PROPERTY_ITEMID"],
-  filterKey: "title", 
-  sortKey: "rank"
-});
-```
-
-**Key Features:**
-- Uniqueness: `userToken + key + itemId`
-- **PROPERTY_ITEMID**: Special property for item ID in search/filter/sort
-- List-level privacy (all items share same privacy)
-- Auto-creates if `defaultValue` provided
-
-#### `useUserListGet<T>(options)`
-Read multiple list items.
-
-```typescript
-// Get all posts
-const posts = useUserListGet<PostType>({
-  key: "posts",
-  returnTop: 20
-});
-
-// Get specific item
-const post = useUserListGet<PostType>({
-  key: "posts",
-  itemId: "post_123"
-});
-
-// Search and paginate
-const searchResults = useUserListGet<PostType>({
-  key: "posts",
-  searchFor: "react",
-  filterFor: "published",
-  returnTop: 10,
-  startAfter: "lastRecordId"
-});
-```
-
-**Features:**
-- Exact lookup with `itemId`
-- Multi-item search with pagination
-- Supports `PROPERTY_ITEMID` in search/filter/sort
-
-#### `useUserListSet<T>()`
-Upsert items without hook instantiation.
-
-```typescript
-const setPost = useUserListSet<PostType>();
-
-// Create new post
-setPost({
-  key: "posts",
-  itemId: "post_456",
-  value: { title: "New Post", body: "Content" },
-  privacy: "PUBLIC",
-  searchKeys: ["title", "body"]
-});
-```
-
-#### `useUserListPrivacy()`
-Update privacy for entire lists.
-
-```typescript
+```ts
 const setListPrivacy = useUserListPrivacy();
 
-// Make all posts public
-setListPrivacy({ 
-  key: "posts", 
-  privacy: "PUBLIC" 
+setListPrivacy({
+  key: "posts", // REQUIRED: list key
+  privacy: "PUBLIC", // REQUIRED: access mode
 });
 ```
 
-#### `useUserListRemove()`
-Delete individual list items.
+Output:
+- Convex mutation promise
+- applies to all items in that list
 
-```typescript
+### `useUserListRemove`
+
+Removes one item row from a list.
+
+```ts
 const removePost = useUserListRemove();
 
-removePost({ 
-  key: "posts", 
-  itemId: "post_123" 
+removePost({
+  key: "posts", // REQUIRED: list key
+  itemId: "post_123", // REQUIRED: item id
 });
 ```
 
----
+Output:
+- Convex mutation promise
+- removes item row only (definition stays)
 
-## 🔗 How Systems Work Together
+## Privacy model
 
-### Profile + Posts Example
-```typescript
-// User's single profile
-const [profile, setProfile] = useUserVariable({
-  key: "profile",
-  defaultValue: { name: "", avatar: "" },
-  privacy: "PUBLIC"
-});
+- `"PRIVATE"`: owner only.
+- `"PUBLIC"`: everyone.
+- `string[]` on hooks -> stored as `{ allowList: string[] }`.
+- Owner always has access to own records.
 
-// User's multiple posts
-const [post, setPost] = useUserList({
-  key: "posts", 
-  itemId: "post_123",
-  defaultValue: { title: "", body: "" },
-  privacy: "PUBLIC"
-});
+## Config defaults (`utils/userVarConfig.ts`)
 
-// Get all posts from all users
-const allPosts = useUserListGet({
-  key: "posts",
-  returnTop: 50
-});
+- `defaultTimeoutMs`: optimistic timeout default.
+- `overwriteStoredConfigOnSet`: whether value writes re-apply config.
+- `defaultSortKey`: fallback sort key when omitted.
+- dev warning toggles:
+  - `devWarningsEnabled`
+  - `warnOnUserVarOpTimeout`
+  - `logOnUserVarRollback`
 
-// Update profile privacy
-const setPrivacy = useUserVariablePrivacy();
-setPrivacy({ key: "profile", privacy: "PUBLIC" });
-```
+## Notes that prevent bugs
 
-### Settings + Data Example
-```typescript
-// User preferences (single)
-const [settings, setSettings] = useUserVariable({
-  key: "settings",
-  defaultValue: { theme: "dark", notifications: true },
-  privacy: "PRIVATE"
-});
+- `userIds` in get hooks is an explicit filter. If provided, only those users are queried.
+- For old local data, ensure friend/user lists are normalized to user-id strings.
+- `filterValue` / `searchValue` / `sortValue` are computed server-side from config + value.
+- exact fast counts are only available through the dedicated `Length` hooks for `key + filterFor`
 
-// User's bookmarks (list)
-const bookmarks = useUserListGet({
-  key: "bookmarks",
-  returnTop: 100
-});
-
-// Add new bookmark
-const addBookmark = useUserListSet();
-addBookmark({
-  key: "bookmarks",
-  itemId: `bookmark_${Date.now()}`,
-  value: { url: "https://example.com", title: "Example" }
-});
-```
-
----
-
-## 🎯 Choosing the Right System
-
-| Use Case | System | Why |
-|-----------|---------|------|
-| User profile/settings | `useUserVariable` | Single value per user |
-| Blog posts | `useUserList` | Multiple posts, need individual items |
-| Shopping list | `useUserList` | Collection of items |
-| App preferences | `useUserVariable` | Single settings object |
-| Comments | `useUserList` | Multiple comments per post |
-| User status | `useUserVariable` | Single status value |
-| Inventory | `useUserList` | Multiple items with properties |
-
----
-
-## 🚀 Quick Start Patterns
-
-### 1. Basic Profile
-```typescript
-const [profile, setProfile] = useUserVariable({
-  key: "profile",
-  defaultValue: { name: "User", bio: "" }
-});
-```
-
-### 2. Simple List
-```typescript
-const [item, setItem] = useUserList({
-  key: "todos",
-  itemId: "todo_1", 
-  defaultValue: { text: "Learn hooks", done: false }
-});
-```
-
-### 3. Multi-Item Query
-```typescript
-const items = useUserListGet({
-  key: "todos",
-  returnTop: 10
-});
-```
-
-### 4. Privacy Control
-```typescript
-const setPrivacy = useUserVariablePrivacy();
-setPrivacy({ key: "profile", privacy: "PUBLIC" });
-```
-
----
-
-## 📱 React Native Integration
-
-All hooks work seamlessly with React Native components:
-
-```typescript
-import React from 'react';
-import { View, TouchableOpacity, Text } from 'react-native';
-import { useUserVariable } from '../hooks/useUserVariable';
-import { useUserList } from '../hooks/useUserList';
-
-export default function MyComponent() {
-  const [profile, setProfile] = useUserVariable({
-    key: "profile",
-    defaultValue: { name: "" }
-  });
-
-  const [post, setPost] = useUserList({
-    key: "posts",
-    itemId: "main",
-    defaultValue: { title: "", body: "" }
-  });
-
-  return (
-    <View>
-      <TouchableOpacity onPress={() => setProfile({ name: "New Name" })}>
-        <Text>Update Profile</Text>
-      </TouchableOpacity>
-      
-      <TouchableOpacity onPress={() => setPost({ title: "New Title", body: "New Content" })}>
-        <Text>Update Post</Text>
-      </TouchableOpacity>
-    </View>
-  );
-}
-```
-
----
-
-## 🔒 Privacy Model
-
-### Privacy Levels
-- **`"PRIVATE"`**: Only owner can access
-- **`"PUBLIC"`**: Anyone can access  
-- **`string[]`**: Whitelist - only specified users can access
-
-### Privacy Inheritance
-- **useUserVariable**: Privacy per variable
-- **useUserList**: Privacy per list (all items inherit list privacy)
-
-### Access Control
-All queries automatically enforce:
-1. Owner always has access
-2. Public items accessible to everyone
-3. Whitelist items accessible to allowed users only
-
----
-
-## 🎯 TL;DR
-
-**User Variables provide "useState for the Cloud."** 
-You focus on UI and product logic; the framework handles persistence, real-time sync, full-text search, permissions, and database indexing.
-
-**Two systems solve different problems:**
-- **useUserVariable**: Single values (profile, settings, status)
-- **useUserList**: Multiple items (posts, inventory, bookmarks)
-
-**Both work together seamlessly** - choose based on your data structure needs.
-
----
-
-This is everything you need to build with BeanJar's data systems. Start with the basic patterns and expand as needed!

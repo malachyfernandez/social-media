@@ -5,10 +5,54 @@ import type { Privacy } from "./useUserList";
 type ObjectKeys<T> = T extends object ? Extract<keyof T, string> : never;
 
 /**
- * Upsert a list item without instantiating a per-item hook.
+ * Upsert one list item by key + itemId.
  *
- * If the item does not exist, this creates it.
- * If the item already exists, this replaces its value.
+ * ```ts
+ * const setPost = useUserListSet<Post>();
+ *
+ * setPost({
+ *   key: "posts", // REQUIRED: list key
+ *   itemId: "post_123", // REQUIRED: item id
+ *   value: { title: "Hi", body: "..." }, // REQUIRED: item value
+ *   privacy: "PUBLIC", // list access mode
+ *   filterKey: "status", // exact filter key
+ *   searchKeys: ["title", "body"], // search source keys
+ *   sortKey: "PROPERTY_LAST_MODIFIED", // stored sort key
+ * });
+ * ```
+ *
+ * Output:
+ * - returns a Convex mutation promise
+ * - creates the item if missing
+ * - otherwise replaces stored `value`
+ * - list config lives on the shared definition row
+ *
+ * Important:
+ * - `privacy`, `filterKey`, `searchKeys`, and `sortKey` are list-level config
+ * - all items in the same `key` share that config
+ * - server derives `filterValue`, `searchValue`, and `sortValue`
+ *
+ * `overwriteStoredConfig` example:
+ *
+ * ```ts
+ * const setPost = useUserListSet<Post>();
+ *
+ * setPost({
+ *   key: "posts",
+ *   itemId: "post_123",
+ *   value: { title: "Hi", body: "...", status: "draft" },
+ *   privacy: "PRIVATE",
+ *   filterKey: "status",
+ *   searchKeys: ["title", "body"],
+ *   sortKey: "status",
+ *   overwriteStoredConfig: true,
+ * });
+ * ```
+ *
+ * `overwriteStoredConfig` notes:
+ * - default behavior keeps the already stored list config
+ * - set `overwriteStoredConfig: true` when you intentionally want to replace that config
+ * - use this sparingly because it affects every item in the same list key
  */
 export function useUserListSet<T = any>() {
   const mutation = useMutation(api.user_lists.set);

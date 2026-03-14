@@ -63,34 +63,142 @@ export type UserListOpStatusInfo<T> = {
 };
 
 /**
- * Persistent user-scoped state for one list item.
+ * Persistent single item inside one user list.
  *
- * Uniqueness is:
- * - userToken + key + itemId
+ * ```ts
+ * const [post, setPost] = useUserList<Post>({
+ *   key: "posts", // REQUIRED: list key
+ *   itemId: "post_123", // REQUIRED: item id
+ *   defaultValue: { title: "", body: "" }, // create fallback
+ *   privacy: "PUBLIC", // list access mode
+ *   filterKey: "status", // exact filter key
+ *   searchKeys: ["title", "body"], // search source keys
+ *   sortKey: "PROPERTY_LAST_MODIFIED", // stored sort key
+ * });
+ * ```
  *
- * This is the multi-item companion to `useUserVariable(...)`.
+ * Output:
+ * - returns `[record, setValue]`
+ * - `record.value`: current UI value
+ * - `record.confirmedValue`: last server value
+ * - `record.state`: `{ isSyncing, lastOpStatus, lastOpStartedAt, lastOpTimedOutAt }`
+ * - `setValue(newValue)`: replaces the whole stored item value
  *
- * Important:
- * - the item's value lives on the list item row
- * - the list-wide config lives on a separate definition row
- * - privacy is list-level, not item-level
+ * Record shape:
+ * - `id` / `_id`
+ * - `definitionId`
+ * - `key`
+ * - `itemId`
+ * - `userToken`
+ * - `value`
+ * - `privacy`
+ * - `filterKey` / `filterValue`
+ * - `searchKeys` / `searchValue`
+ * - `sortKey` / `sortValue`
+ * - `createdAt` / `lastModified`
+ * - `confirmedValue`
+ * - `state`
  *
- * `filterKey`, `searchKeys`, and `sortKey` may reference:
- * - fields inside the item value
- * - PROPERTY_* metadata references
+ * Mental model:
+ * - this is "my one item in my one list"
+ * - each authenticated user gets at most one row per `key + itemId`
+ * - list config lives on the shared list definition
+ * - item rows store actual values plus derived indexed fields
  *
- * Supported list-specific property reference:
- * - PROPERTY_ITEMID
+ * List-level config:
+ * - `privacy`
+ * - `filterKey`
+ * - `searchKeys`
+ * - `sortKey`
  *
- * Example:
- * const [post, setPost] = useUserList({
+ * All items in the same list key share that config.
+ *
+ * Derived server fields:
+ * - `filterValue`
+ * - `searchValue`
+ * - `sortValue`
+ *
+ * Property references:
+ * - plain keys read from `value`
+ * - `PROPERTY_*` keys read from record metadata
+ *
+ * Examples:
+ * ```ts
+ * filterKey: "status" // reads value.status
+ * searchKeys: ["title", "body"] // reads value fields
+ * sortKey: "PROPERTY_LAST_MODIFIED" // reads record.lastModified
+ * filterKey: "PROPERTY_ITEMID" // reads itemId
+ * ```
+ *
+ * Supported `PROPERTY_*` references:
+ * - `PROPERTY_ID`
+ * - `PROPERTY__ID`
+ * - `PROPERTY_ITEMID`
+ * - `PROPERTY_CREATED_AT`
+ * - `PROPERTY_TIME_CREATED`
+ * - `PROPERTY_FILTER_KEY`
+ * - `PROPERTY_FILTER_VALUE`
+ * - `PROPERTY_KEY`
+ * - `PROPERTY_LAST_MODIFIED`
+ * - `PROPERTY_PRIVACY`
+ * - `PROPERTY_SEARCH_KEYS`
+ * - `PROPERTY_SEARCH_VALUE`
+ * - `PROPERTY_SORT_KEY`
+ * - `PROPERTY_SORT_VALUE`
+ * - `PROPERTY_USER_TOKEN`
+ * - `PROPERTY_VALUE`
+ *
+ * Self-reference rule:
+ * - `filterKey: "PROPERTY_FILTER_VALUE"` is ignored
+ * - `searchKeys: ["PROPERTY_SEARCH_VALUE"]` is ignored
+ * - `sortKey: "PROPERTY_SORT_VALUE"` is ignored
+ *
+ * Setter behavior:
+ * - `setValue(...)` replaces the stored item value
+ * - it does not merge objects
+ *
+ * `overwriteStoredConfig` example:
+ *
+ * ```ts
+ * const [post, setPost] = useUserList<Post>({
  *   key: "posts",
  *   itemId: "post_123",
  *   defaultValue: { title: "", body: "" },
- *   privacy: "PUBLIC",
- *   searchKeys: ["title", "body", "PROPERTY_ITEMID"],
- *   sortKey: "PROPERTY_LAST_MODIFIED",
+ *   privacy: "PRIVATE",
+ *   filterKey: "status",
+ *   searchKeys: ["title", "body"],
+ *   overwriteStoredConfig: true,
  * });
+ * ```
+ *
+ * `overwriteStoredConfig` notes:
+ * - default behavior keeps the already stored list config
+ * - use `overwriteStoredConfig: true` only when you intentionally want normal writes to replace list config
+ * - this affects the shared list definition, not just one item
+ *
+ * Timeout example:
+ *
+ * ```ts
+ * const [post, setPost] = useUserList<Post>({
+ *   key: "posts",
+ *   itemId: "post_123",
+ *   defaultValue: { title: "", body: "" },
+ *   timeoutMs: 10000,
+ *   optimisticTimeoutBehavior: "keep",
+ *   onOpStatusChange(info) {
+ *     console.log(info.status, info.itemId, info.msSinceSet);
+ *   },
+ * });
+ * ```
+ *
+ * Timeout notes:
+ * - writes are optimistic
+ * - `pending` means the UI updated before server confirmation
+ * - `confirmed` means the latest write was acknowledged
+ * - `timed_out` means confirmation missed `timeoutMs`
+ * - `"reset"` rolls UI back to the last confirmed value
+ * - `"keep"` leaves the optimistic value visible
+ * - defaults live in `utils/userVarConfig.ts`
  */
 export function useUserList<T>({
   key,

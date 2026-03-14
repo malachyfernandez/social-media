@@ -16,9 +16,9 @@ export default defineSchema({
   }).index("by_key", ["key"]),
 
   user_vars: defineTable({
-    userToken: v.string(),
     key: v.string(),
     value: v.any(),
+    userToken: v.string(),
 
     // Metadata
     lastModified: v.number(),
@@ -55,6 +55,36 @@ export default defineSchema({
     .index("by_user", ["allowedUserId"])
     .index("by_var", ["varId"]),
 
+  user_var_public_counts: defineTable({
+    key: v.string(),
+    filterValue: v.optional(primitiveIndexValue),
+    count: v.number(),
+  }).index("by_key_filter", ["key", "filterValue"]),
+
+  user_var_owner_counts: defineTable({
+    ownerUserToken: v.string(),
+    key: v.string(),
+    filterValue: v.optional(primitiveIndexValue),
+    accessScope: v.union(
+      v.literal("PUBLIC"),
+      v.literal("PRIVATE"),
+      v.literal("SHARED")
+    ),
+    count: v.number(),
+  }).index("by_owner_key_filter_scope", [
+    "ownerUserToken",
+    "key",
+    "filterValue",
+    "accessScope",
+  ]),
+
+  user_var_shared_counts: defineTable({
+    allowedUserId: v.string(),
+    key: v.string(),
+    filterValue: v.optional(primitiveIndexValue),
+    count: v.number(),
+  }).index("by_user_key_filter", ["allowedUserId", "key", "filterValue"]),
+
   // ---------------------------------------------------------------------------
   // New list definition table
   // One row per userToken + key
@@ -81,12 +111,11 @@ export default defineSchema({
   // Stores actual item data and derived query values.
   // ---------------------------------------------------------------------------
   user_lists: defineTable({
-    definitionId: v.id("user_list_definitions"),
-
-    userToken: v.string(),
     key: v.string(),
-    itemId: v.string(),
     value: v.any(),
+    itemId: v.string(),
+    userToken: v.string(),
+    definitionId: v.id("user_list_definitions"),
 
     lastModified: v.number(),
     createdAt: v.number(),
@@ -158,4 +187,34 @@ export default defineSchema({
     .index("by_user", ["allowedUserId"])
     .index("by_user_key", ["allowedUserId", "key"])
     .index("by_definition", ["definitionId"]),
+
+  user_list_public_counts: defineTable({
+    key: v.string(),
+    filterValue: v.optional(primitiveIndexValue),
+    count: v.number(),
+  }).index("by_key_filter", ["key", "filterValue"]),
+
+  user_list_owner_counts: defineTable({
+    ownerUserToken: v.string(),
+    key: v.string(),
+    filterValue: v.optional(primitiveIndexValue),
+    accessScope: v.union(
+      v.literal("PUBLIC"),
+      v.literal("PRIVATE"),
+      v.literal("SHARED")
+    ),
+    count: v.number(),
+  }).index("by_owner_key_filter_scope", [
+    "ownerUserToken",
+    "key",
+    "filterValue",
+    "accessScope",
+  ]),
+
+  user_list_shared_counts: defineTable({
+    allowedUserId: v.string(),
+    key: v.string(),
+    filterValue: v.optional(primitiveIndexValue),
+    count: v.number(),
+  }).index("by_user_key_filter", ["allowedUserId", "key", "filterValue"]),
 });
