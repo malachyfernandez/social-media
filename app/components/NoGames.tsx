@@ -11,7 +11,10 @@ interface NoGamesProps {
 const NoGames = ({ showModal }: NoGamesProps) => {
     return (
         <Column className='w-full items-center h-full justify-center'>
-            <SadEmoji size={100} lineWidth={1} />
+
+            
+                <SadEmoji size={100} lineWidth={1} />
+            
             <PoppinsText >You dont have any games right now</PoppinsText>
             <JoinGameButton onPress={showModal} />
         </Column>

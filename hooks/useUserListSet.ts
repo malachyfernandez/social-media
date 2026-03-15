@@ -59,7 +59,59 @@ type ObjectKeys<T> = T extends object ? Extract<keyof T, string> : never;
 export function useUserListSet<T = any>() {
   const mutation = useMutation(api.user_lists.set);
 
-  return ({
+  /**
+   * Upsert one list item by key + itemId.
+   *
+   * ```ts
+   * const setPost = useUserListSet<Post>();
+   *
+   * setPost({
+   *   key: "posts", // REQUIRED: list key
+   *   itemId: "post_123", // REQUIRED: item id
+   *   value: { title: "Hi", body: "..." }, // REQUIRED: item value
+   *   privacy: "PUBLIC", // list access mode
+   *   filterKey: "status", // exact filter key
+   *   searchKeys: ["title", "body"], // search source keys
+   *   sortKey: "PROPERTY_LAST_MODIFIED", // stored sort key
+   * });
+   * ```
+   *
+   * Output:
+   * - returns a Convex mutation promise
+   * - creates the item if missing
+   * - otherwise replaces stored `value`
+   * - list config lives on the shared definition row
+   *
+   * Important:
+   * - `privacy`, `filterKey`, `searchKeys`, and `sortKey` are list-level config
+   * - all items in the same `key` share that config
+   * - server derives `filterValue`, `searchValue`, and `sortValue`
+   *
+   * Config sync example:
+   *
+   * ```ts
+   * const setPost = useUserListSet<Post>();
+   *
+   * setPost({
+   *   key: "posts",
+   *   itemId: "post_123",
+   *   value: { title: "Hi", body: "...", status: "draft" },
+   *   privacy: "PRIVATE",
+   *   filterKey: "status",
+   *   searchKeys: ["title", "body"],
+   *   sortKey: "status",
+   *   overwriteStoredConfig: true, // default: keep filter/search/sort synced
+   *   overwriteStoredPrivacy: false, // default: keep privacy sticky
+   * });
+   * ```
+   *
+   * Config sync notes:
+   * - `overwriteStoredConfig` covers filter/search/sort only (defaults to `true`)
+   * - `overwriteStoredPrivacy` covers privacy only (defaults to `false`)
+   * - toggling either controls whether normal writes re-apply props vs. preserve stored values
+   * - use with care because it updates the shared list definition for that key
+   */
+  function setUserList({
     key,
     itemId,
     value,
@@ -79,7 +131,7 @@ export function useUserListSet<T = any>() {
     sortKey?: ObjectKeys<T> | string;
     overwriteStoredConfig?: boolean;
     overwriteStoredPrivacy?: boolean;
-  }) => {
+  }) {
     const backendPrivacy = Array.isArray(privacy)
       ? { allowList: privacy }
       : privacy;
@@ -95,5 +147,7 @@ export function useUserListSet<T = any>() {
       overwriteStoredConfig,
       overwriteStoredPrivacy,
     });
-  };
+  }
+
+  return setUserList;
 }

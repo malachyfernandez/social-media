@@ -34,7 +34,7 @@ const JoinGameModal: React.FC<JoinGameModalProps> = ({
                         entering={FadeInDown.duration(100)}
                         exiting={FadeOutDown.duration(100)}
                     >
-                        <Column className='bg-background p-6 rounded border-2 border-border'>
+                        <Column className='bg-background p-6 rounded border-2 border-border w-[80vw] max-w-96'>
                             <PoppinsText>Code:</PoppinsText>
                             <PoppinsTextInput
                                 placeholder="Enter game code"
@@ -42,6 +42,7 @@ const JoinGameModal: React.FC<JoinGameModalProps> = ({
                                 value={gameCode}
                                 onChangeText={setGameCode}
                             />
+                            
                             <AppButton variant="black" className="h-10 w-20" onPress={() => onJoinGame(gameCode)}>
                                 <PoppinsText weight='medium' color='white'>Join</PoppinsText>
                             </AppButton>

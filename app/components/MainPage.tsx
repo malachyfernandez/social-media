@@ -5,7 +5,7 @@ import { useSyncUserData } from 'hooks/useSyncUserData';
 import Column from './layout/Column';
 import { useClerk } from '@clerk/clerk-expo';
 import { Text, TextInput, TouchableOpacity, View, ScrollView } from 'react-native';
-import Animated, { FadeIn, FadeInDown, FadeInUp, FadeOut, FadeOutDown } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown, FadeInLeft, FadeInRight, FadeInUp, FadeOut, FadeOutDown, FadeOutRight } from 'react-native-reanimated';
 import AppButton from './ui/AppButton';
 import JoinGameButton from './ui/JoinGameButton';
 import Row from './layout/Row';
@@ -17,6 +17,9 @@ import JoinGameModal from './ui/JoinGameModal';
 import GameList from './GameList';
 import TopSiteBar from './TopSiteBar';
 import NoGames from './NoGames';
+import { useUserListSet } from 'hooks/useUserListSet';
+import { useUserListGet } from 'hooks/useUserListGet';
+import prettyLog from 'utils/prettyLog';
 // import { AnimatedView } from 'react-native-reanimated/lib/typescript/component/View';
 
 
@@ -45,6 +48,9 @@ const MainPage = ({
         searchKeys: ["name"],
     });
 
+    
+    const userId = userData.value.userId  || "";
+
 
 
 
@@ -57,55 +63,118 @@ const MainPage = ({
         defaultValue: [],
     });
 
+
+
     const hasJoinedAGame = (gamesTheyJoined?.value.length ? true : false);
+    const isGamesLoading = gamesTheyJoined?.state.isSyncing;
 
     const [isModalShowing, setIsModalShowing] = useState(false);
 
     const [gameCode, setGameCode] = useState("");
 
     const showModal = () => {
-        setIsModalShowing(true)
+        setIsModalShowing(true);
     }
 
     const hideModal = () => {
-        setIsModalShowing(false)
+        setIsModalShowing(false);
     }
 
     const joinGame = (gameId: string) => {
-        setGamesTheyJoined([...gamesTheyJoined.value, gameId])
-        hideModal()
+        setGamesTheyJoined([...gamesTheyJoined.value, gameId]);
+        hideModal();
     }
+
+    const generateGameId = () => {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let result = '';
+        for (let i = 0; i < 8; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return result;
+    }
+
+    const addNewGame = () => {
+        const newGameId = generateGameId();
+
+        setUserListItem({
+            key: "games",
+            itemId: newGameId,
+            value: {
+                id: newGameId,
+                name: "Game 1",
+                description: "Description 1",
+            },
+            filterKey: "id",
+        });
+    }
+
+    const setUserListItem = useUserListSet();
+
+    const getMyGames = useUserListGet({
+        key: "games",
+        userIds: [userId],
+    })
+
+    prettyLog(getMyGames)
 
     return (
         <View className='justify-between w-full h-full'>
 
             <TopSiteBar />
+
+            {/* main content */}
             <Column className='flex-1 h-full'>
                 <Column className='flex-1 h-full'>
-                    {hasJoinedAGame ? (
-                        <ScrollView>
-                            <GameList 
-                                gamesTheyJoined={gamesTheyJoined.value}
-                                setGamesTheyJoined={setGamesTheyJoined}
-                            />
-                        </ScrollView>
-                    ) : (
-                        <NoGames showModal={showModal} />
+                    {!isGamesLoading && (
+
+                        hasJoinedAGame ? (
+                            <Animated.View
+                                entering={FadeInDown.duration(600)}
+                                exiting={FadeOutDown.duration(600)}
+                            >
+                                <ScrollView>
+                                    <GameList
+                                        gamesTheyJoined={gamesTheyJoined.value}
+                                        setGamesTheyJoined={setGamesTheyJoined}
+                                    />
+                                </ScrollView>
+                            </Animated.View>
+                        ) : (
+                            <Column className='items-center justify-center flex-1'>
+                                <Animated.View
+                                    entering={FadeInDown.duration(600)}
+                                    exiting={FadeOutDown.duration(600)}
+                                >
+                                    <NoGames showModal={showModal} />
+                                </Animated.View>
+                            </Column>
+
+                        )
                     )}
 
                 </Column>
+
+                {/* bottom bar */}
                 <Column>
                     <Row className='p-6 border-t border-subtle-border justify-between'>
-                        <AppButton variant="outline" className="h-12 w-40" onPress={signOut}>
+                        <AppButton variant="outline" className="h-12 w-48" onPress={addNewGame}>
                             <PoppinsText weight='medium' className='group-hover:text-white'>New WolffsPoint</PoppinsText>
                         </AppButton>
 
                         {hasJoinedAGame && (
-                            <JoinGameButton onPress={showModal} />
+                            <Animated.View
+                                entering={FadeInRight.duration(100)}
+                                exiting={FadeOutRight.duration(100)}
+                            >
+                                <JoinGameButton onPress={showModal} />
+                            </Animated.View>
                         )}
                     </Row>
                 </Column>
             </Column>
+
+            {/* modal */}
             <JoinGameModal
                 isVisible={isModalShowing}
                 onHide={hideModal}
