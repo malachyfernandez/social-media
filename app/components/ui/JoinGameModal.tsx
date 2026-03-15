@@ -4,18 +4,18 @@ import Animated, { FadeIn, FadeInDown, FadeOut, FadeOutDown } from 'react-native
 import Column from '../layout/Column';
 import PoppinsText from './PoppinsText';
 import PoppinsTextInput from './PoppinsTextInput';
-import AppButton from './AppButton';
+import JoinHandler from './JoinHandler';
 
 interface JoinGameModalProps {
     isVisible: boolean;
     onHide: () => void;
-    onJoinGame: (gameCode: string) => void;
+    handleJoinGame: (gameCode: string) => void;
 }
 
 const JoinGameModal: React.FC<JoinGameModalProps> = ({
     isVisible,
     onHide,
-    onJoinGame,
+    handleJoinGame,
 }) => {
     const [gameCode, setGameCode] = useState("");
 
@@ -43,9 +43,7 @@ const JoinGameModal: React.FC<JoinGameModalProps> = ({
                                 onChangeText={setGameCode}
                             />
                             
-                            <AppButton variant="black" className="h-10 w-20" onPress={() => onJoinGame(gameCode)}>
-                                <PoppinsText weight='medium' color='white'>Join</PoppinsText>
-                            </AppButton>
+                            <JoinHandler handleJoinGame={handleJoinGame} gameCode={gameCode} />
                         </Column>
                     </Animated.View>
                 </Column>

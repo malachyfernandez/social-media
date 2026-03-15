@@ -20,6 +20,7 @@ import NoGames from './NoGames';
 import { useUserListSet } from 'hooks/useUserListSet';
 import { useUserListGet } from 'hooks/useUserListGet';
 import prettyLog from 'utils/prettyLog';
+import { GameInfo } from 'types/games';
 // import { AnimatedView } from 'react-native-reanimated/lib/typescript/component/View';
 
 
@@ -65,12 +66,8 @@ const MainPage = ({
 
 
 
-    const hasJoinedAGame = (gamesTheyJoined?.value.length ? true : false);
-    const isGamesLoading = gamesTheyJoined?.state.isSyncing;
 
     const [isModalShowing, setIsModalShowing] = useState(false);
-
-    const [gameCode, setGameCode] = useState("");
 
     const showModal = () => {
         setIsModalShowing(true);
@@ -111,12 +108,23 @@ const MainPage = ({
 
     const setUserListItem = useUserListSet();
 
-    const getMyGames = useUserListGet({
+    const myGames = useUserListGet<GameInfo>({
         key: "games",
         userIds: [userId],
     })
 
-    prettyLog(getMyGames)
+    // prettyLog(myGames)
+
+
+    const hasJoinedAGame = (gamesTheyJoined?.value.length ? true : false);
+    const hasMadeAGame = (myGames?.length ? true : false);
+
+    const isGamesPageEmpty = !hasJoinedAGame && !hasMadeAGame;
+
+    const isGamesLoading = gamesTheyJoined?.state.isSyncing;
+
+
+
 
     return (
         <View className='justify-between w-full h-full'>
@@ -128,7 +136,7 @@ const MainPage = ({
                 <Column className='flex-1 h-full'>
                     {!isGamesLoading && (
 
-                        hasJoinedAGame ? (
+                        !isGamesPageEmpty ? (
                             <Animated.View
                                 entering={FadeInDown.duration(600)}
                                 exiting={FadeOutDown.duration(600)}
@@ -137,6 +145,9 @@ const MainPage = ({
                                     <GameList
                                         gamesTheyJoined={gamesTheyJoined.value}
                                         setGamesTheyJoined={setGamesTheyJoined}
+                                        myGames={myGames}
+                                        hasJoinedAGame={hasJoinedAGame}
+                                        hasMadeAGame={hasMadeAGame}
                                     />
                                 </ScrollView>
                             </Animated.View>
@@ -162,7 +173,7 @@ const MainPage = ({
                             <PoppinsText weight='medium' className='group-hover:text-white'>New WolffsPoint</PoppinsText>
                         </AppButton>
 
-                        {hasJoinedAGame && (
+                        {!isGamesPageEmpty && (
                             <Animated.View
                                 entering={FadeInRight.duration(100)}
                                 exiting={FadeOutRight.duration(100)}
@@ -178,7 +189,7 @@ const MainPage = ({
             <JoinGameModal
                 isVisible={isModalShowing}
                 onHide={hideModal}
-                onJoinGame={joinGame}
+                handleJoinGame={joinGame}
             />
 
 

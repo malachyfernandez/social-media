@@ -1,37 +1,37 @@
 import React from 'react';
 import Column from './layout/Column';
-import AppButton from './ui/AppButton';
-import PoppinsText from './ui/PoppinsText';
+import JoinedGames from './JoinedGames';
+import MyGames from './MyGames';
+
+import { UserListRecord } from 'hooks/useUserList';
+import prettyLog from 'utils/prettyLog';
+import { GameInfo } from 'types/games';
+
+
 
 interface GameListProps {
     gamesTheyJoined: string[];
     setGamesTheyJoined: (games: string[]) => void;
+    myGames: UserListRecord<GameInfo>[] | undefined;
+    hasJoinedAGame: boolean;
+    hasMadeAGame: boolean;
 }
 
-const GameList = ({ gamesTheyJoined, setGamesTheyJoined }: GameListProps) => {
+const GameList = ({ gamesTheyJoined, setGamesTheyJoined, myGames, hasJoinedAGame, hasMadeAGame }: GameListProps) => {
+
+    prettyLog(myGames);
     return (
         <Column className='p-6'>
-            <Column>
-                <PoppinsText weight='bold'>Joined Games</PoppinsText>
-            </Column>
-            <Column>
-                {gamesTheyJoined.map((game) => (
-                    <Column key={game}>
-                        <PoppinsText>{game}</PoppinsText>
-                        <AppButton 
-                            variant="green" 
-                            className="h-12 w-40" 
-                            onPress={() => setGamesTheyJoined(gamesTheyJoined.filter((g) => g !== game))}
-                        >
-                            <PoppinsText weight='medium' color="white">Leave</PoppinsText>
-                        </AppButton>
-                    </Column>
-                ))}
-            </Column>
+            {hasJoinedAGame && (
+                <JoinedGames 
+                    gamesTheyJoined={gamesTheyJoined} 
+                    setGamesTheyJoined={setGamesTheyJoined} 
+                />
+            )}
 
-            <Column>
-                <PoppinsText weight='bold'>My Games</PoppinsText>
-            </Column>
+            {hasMadeAGame && (
+                <MyGames myGames={myGames} />
+            )}
         </Column>
     );
 };

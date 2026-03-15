@@ -37,7 +37,7 @@ export default function HomeScreen() {
       </SignedIn>
 
       <SignedOut>
-        <Column className="p-20 bg-text items-center" gap={16}>
+        <Column className="py-20 w-[80%] max-w-96 bg-text items-center" gap={16}>
           <PoppinsText className="text-2xl font-bold text-center" color="white">Welcome to WolffsPoint</PoppinsText>
           {/* <AuthButton
             authFlow={startAppleFlow}
