@@ -1,5 +1,5 @@
 import React from 'react';
-import Column from '../layout/Column';
+import Column from './layout/Column';
 import { SadEmoji } from './icons/SadEmoji';
 import PoppinsText from './ui/PoppinsText';
 import JoinGameButton from './ui/JoinGameButton';
