@@ -4,7 +4,8 @@ import { useUserVariable } from 'hooks/useUserVariable';
 import { useSyncUserData } from 'hooks/useSyncUserData';
 import ContainerCol from './layout/ContainerCol';
 import { useClerk } from '@clerk/clerk-expo';
-import { Text, TextInput, TouchableOpacity, View, ScrollView, Animated } from 'react-native';
+import { Text, TextInput, TouchableOpacity, View, ScrollView } from 'react-native';
+import Animated, { FadeIn, FadeInDown, FadeInUp, FadeOut, FadeOutDown } from 'react-native-reanimated';
 import AppButton from './ui/AppButton';
 import JoinGameButton from './ui/JoinGameButton';
 import ContainerRow from './layout/ContainerRow';
@@ -12,6 +13,8 @@ import PoppinsText from './ui/PoppinsText';
 import { UserIcon } from './icons/UserIcon';
 import { SadEmoji } from './icons/SadEmoji';
 import PoppinsTextInput from './ui/PoppinsTextInput';
+import JoinGameModal from './ui/JoinGameModal';
+import GameList from './GameList';
 // import { AnimatedView } from 'react-native-reanimated/lib/typescript/component/View';
 
 
@@ -91,18 +94,10 @@ const MainPage = ({
                 <ContainerCol className='flex-1 h-full'>
                     {hasJoinedAGame ? (
                         <ScrollView>
-                            <ContainerCol className='p-6 '>
-                                <PoppinsText weight='bold'>My Games</PoppinsText>
-                                {gamesTheyJoined.value.map((game) => (
-                                    <ContainerCol>
-                                        <PoppinsText>{game}</PoppinsText>
-                                        {/* nutton to remove game */}
-                                        <AppButton variant="green" className="h-12 w-40" onPress={() => setGamesTheyJoined(gamesTheyJoined.value.filter((g) => g !== game))}>
-                                            <PoppinsText weight='medium' color="white">Leave</PoppinsText>
-                                        </AppButton>
-                                    </ContainerCol>
-                                ))}
-                            </ContainerCol>
+                            <GameList 
+                                gamesTheyJoined={gamesTheyJoined.value}
+                                setGamesTheyJoined={setGamesTheyJoined}
+                            />
                         </ScrollView>
                     ) : (
                         <ContainerCol className='w-full items-center h-full justify-center'>
@@ -129,26 +124,11 @@ const MainPage = ({
                     </ContainerRow>
                 </ContainerCol>
             </ContainerCol>
-
-            {isModalShowing && (
-                <Animated.View>
-                    <ContainerCol className='absolute w-full h-full bg-black/50 justify-center items-center' >
-                        <TouchableOpacity onPress={hideModal} className='w-full h-full z-[-10] absolute' />
-                        <ContainerCol className='bg-background p-6 rounded border-2 border-border'>
-                            <PoppinsText>Code:</PoppinsText>
-                            <PoppinsTextInput
-                                placeholder="Enter game code"
-                                className="w-full border border-subtle-border p-2"
-                                value={gameCode}
-                                onChangeText={setGameCode}
-                            />
-                            <AppButton variant="black" className="h-10 w-20" onPress={() => joinGame(gameCode)}>
-                                <PoppinsText weight='medium' color='white'>Join</PoppinsText>
-                            </AppButton>
-                        </ContainerCol>
-                    </ContainerCol>
-                </Animated.View>
-            )}
+            <JoinGameModal
+                isVisible={isModalShowing}
+                onHide={hideModal}
+                onJoinGame={joinGame}
+            />
 
 
 
