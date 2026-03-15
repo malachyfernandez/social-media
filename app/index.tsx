@@ -7,6 +7,7 @@ import * as WebBrowser from "expo-web-browser";
 import AuthButton from "./components/ui/AuthButton";
 import ContainerCol from "./components/layout/ContainerCol";
 import MainPage from "./components/MainPage";
+import PoppinsText from "./components/ui/PoppinsText";
 
 const useWarmUpBrowser = () => {
   useEffect(() => {
@@ -30,20 +31,21 @@ export default function HomeScreen() {
   const [searchText, setSearchText] = useState("");
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-900 items-center justify-center">
+    <SafeAreaView className="flex-1 bg-background items-center justify-center">
       <SignedIn>
         <MainPage />
       </SignedIn>
 
       <SignedOut>
-        <ContainerCol>
-          <AuthButton
+        <ContainerCol className="p-20 bg-text items-center" gap={16}>
+          <PoppinsText className="text-2xl font-bold text-center" color="white">Welcome to WolffsPoint</PoppinsText>
+          {/* <AuthButton
             authFlow={startAppleFlow}
             buttonText="Continue with Apple"
-          />
+          /> */}
           <AuthButton
             authFlow={startGoogleFlow}
-            buttonText="Continue with Google"
+            buttonText="Sign in with Google"
           />
         </ContainerCol>
       </SignedOut>

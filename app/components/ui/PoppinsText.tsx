@@ -4,11 +4,13 @@ import { useFonts } from 'expo-font';
 
 type FontWeight = 'regular' | 'medium' | 'bold';
 type PoppinsTextVarient = 'default' | 'heading' | 'subtext';
+type TextColor = 'black' | 'white';
 
 interface PoppinsTextProps extends PropsWithChildren {
     className?: string;
     weight?: FontWeight;
     varient?: PoppinsTextVarient;
+    color?: TextColor;
     style?: TextStyle;
 }
 
@@ -17,6 +19,7 @@ const PoppinsText = ({
     className = '',
     weight = 'regular',
     varient = 'default',
+    color = 'black',
     style
 }: PoppinsTextProps) => {
     const [fontsLoaded] = useFonts({
@@ -46,9 +49,11 @@ const PoppinsText = ({
         }
     };
 
+    const tailwindColor = color === 'black' ? 'text-text' : 'text-white';
+
     return (
         <Text
-            className={`text-white ${className}`}
+            className={`${tailwindColor} ${className}`}
             style={{ fontFamily: getFontFamily(), ...style }}
         >
             {children}
