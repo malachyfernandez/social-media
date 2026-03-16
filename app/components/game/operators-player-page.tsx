@@ -106,11 +106,12 @@ const OperatorsPlayerPage = ({ currentUserId, gameId }: OperatorsPlayerPageProps
             {/* if startingDate.value === "Unset" show modal */}
             {isNoStartingDate ? (
                 <>
+
                     <PoppinsText>Set starting date</PoppinsText>
                     <AppButton variant="green" className='w-52 h-12'
                         onPress={openDayConfigModal}
                     >
-                        <PoppinsText weight='bold' className='text-white'>Set Starting Date</PoppinsText>
+                        <PoppinsText weight='bold' className='text-white'>Get Started</PoppinsText>
                     </AppButton>
                 </>
             ) : (

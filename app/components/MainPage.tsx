@@ -14,6 +14,9 @@ import GamePage from './game/GamePage';
 import { ModalProvider } from './modal/ModalContext';
 import GenericModal from './modal/GenericModal';
 import ModalRegistry from './modal/ModalRegistry';
+import ModalHeader from './modals/ModalHeader';
+import PoppinsTextInput from './ui/forms/PoppinsTextInput';
+import JoinHandler from './ui/forms/JoinHandler';
 
 
 
@@ -86,26 +89,40 @@ const MainPageContent: React.FC<MainPageProps> = ({
         <View className=' justify-between w-full h-full'>
             <ModalRegistry />
             <View className='absolute right-4 top-20 z-10'>
-                <Dialog isOpen={isHeroDialogOpen} onOpenChange={setIsHeroDialogOpen}>
+                {/* <Dialog isOpen={isHeroDialogOpen} onOpenChange={setIsHeroDialogOpen}>
                     <Dialog.Trigger asChild>
                         <Button>Open HeroUI Dialog</Button>
                     </Dialog.Trigger>
                     <Dialog.Portal>
-                        <Dialog.Overlay />
+                        <Dialog.Overlay className='bg-black/20' />
+                        
                         <Dialog.Content className='bg-background rounded border-2 border-border'>
-                            <Dialog.Close className='w-10 h-10 bg-accent-hover'/>
-                            <Dialog.Title>HeroUI is working</Dialog.Title>
-                            <Dialog.Description>
+
+                            <Dialog.Close className='w-10 h-10 bg-accent-hover absolute right-4 top-4 z-10' iconProps={{ color: 'background' }} />
+
+                            <Column>
+                                <ModalHeader
+                                    text="Join a Game"
+                                    subtext="Enter a game code to join."
+                                />
+
                                 
-                            </Dialog.Description>
-                            <PoppinsText varient='subtext'>
+                                <PoppinsTextInput
+                                    placeholder="Enter game code"
+                                    className="w-full border border-subtle-border p-2"
+                                    value={gameCode}
+                                    onChangeText={setGameCode}
+                                />
+                                <JoinHandler onJoin={handleJoin} gameCode={gameCode} />
+                                <PoppinsText varient='subtext'>
                                     This dialog was opened from a HeroUI Native button inside `MainPage.tsx`.
                                 </PoppinsText>
+                            </Column>
                         </Dialog.Content>
                     </Dialog.Portal>
-                </Dialog>
+                </Dialog> */}
             </View>
-            
+
             <TopSiteBar isInAGame={isInAGame} setActiveGameId={setActiveGameId} />
             {!isInAGame ? (
                 <ChooseGamePicker
@@ -115,8 +132,8 @@ const MainPageContent: React.FC<MainPageProps> = ({
                     addNewGame={addNewGame}
                 />
             ) : (
-                <GamePage 
-                    gameId={activeGameId.value} 
+                <GamePage
+                    gameId={activeGameId.value}
                     currentUserId={userId}
                 />
             )}

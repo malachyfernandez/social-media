@@ -1,16 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 import { useUserVariable } from 'hooks/useUserVariable';
 import { useSyncUserData } from 'hooks/useSyncUserData';
 import Column from '../layout/Column';
 import { ScrollView } from 'react-native';
-import Animated, { FadeInDown, FadeInRight, FadeOutDown, FadeOutRight } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated';
 import AppButton from '../ui/buttons/AppButton';
-import JoinGameButton from '../ui/buttons/JoinGameButton';
+import JoinGameButton from './JoinGameButton';
 import Row from '../layout/Row';
 import PoppinsText from '../ui/text/PoppinsText';
-import PoppinsTextInput from '../ui/forms/PoppinsTextInput';
-import JoinHandler from '../ui/forms/JoinHandler';
 import GameList from './GameList';
 import NoGames from './NoGames';
 import { GameInfo, MyGames } from 'types/games';
@@ -69,6 +67,8 @@ const ChooseGamePicker = ({
     const isGamesPageEmpty = !hasJoinedAGame && !hasMadeAGame;
     const isGamesLoading = gamesTheyJoined?.state.isSyncing;
 
+
+
     return (
         <Column className='flex-1 h-full'>
             <Column className='flex-1 h-full'>
@@ -113,12 +113,7 @@ const ChooseGamePicker = ({
                     </AppButton>
 
                     {!isGamesPageEmpty && (
-                        <Animated.View
-                            entering={FadeInRight.duration(100)}
-                            exiting={FadeOutRight.duration(100)}
-                        >
-                            <JoinGameButton onPress={openJoinGameModal} />
-                        </Animated.View>
+                        <JoinGameButton onJoin={joinGame} />
                     )}
                 </Row>
             </Column>

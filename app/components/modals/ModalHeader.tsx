@@ -10,7 +10,7 @@ interface ModalHeaderProps {
 
 const ModalHeader: React.FC<ModalHeaderProps> = ({ text, subtext, className }) => {
   return (
-    <Column gap={0} className={`bg-primary-accent p-4 items-center m-[-1.5rem] mb-0 ${className || ''}`}>
+    <Column gap={0} className={`bg-primary-accent p-4 items-center m-[-1.25rem] rounded-t-sm mb-0 ${className || ''}`}>
       <PoppinsText weight='medium' color='white'>{text}</PoppinsText>
       <PoppinsText varient='subtext' weight='medium' color='white'>{subtext}</PoppinsText>
     </Column>
