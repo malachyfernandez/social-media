@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useUserVariable } from 'hooks/useUserVariable';
-import { ConvexDialog } from '../ui/dialog/ConvexDialog';
+import ConvexDialog from '../ui/dialog/ConvexDialog';
 import Column from '../layout/Column';
 import Animated from 'react-native-reanimated';
 import { FadeInRight, FadeOutRight } from 'react-native-reanimated';
@@ -8,7 +8,7 @@ import AppButton from '../ui/buttons/AppButton';
 import PoppinsText from '../ui/text/PoppinsText';
 import PoppinsTextInput from '../ui/forms/PoppinsTextInput';
 import JoinHandler from '../ui/forms/JoinHandler';
-import ModalHeader from '../modals/ModalHeader';
+import DialogHeader from '../ui/dialog/DialogHeader';
 
 interface JoinGameButtonProps {
     onJoin?: (gameId: string) => void;
@@ -47,7 +47,7 @@ const JoinGameButton = ({ onJoin }: JoinGameButtonProps) => {
                         <ConvexDialog.Close iconProps={{ color: 'rgb(246, 238, 219)' }} className="w-10 h-10 bg-accent-hover absolute right-4 top-4 z-10" />
 
                         <Column>
-                            <ModalHeader
+                            <DialogHeader
                                 text="Join a Game"
                                 subtext="Enter a game code to join."
                             />

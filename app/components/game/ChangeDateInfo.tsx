@@ -10,7 +10,7 @@ import SmartDateInput from '../ui/forms/SmartDateInput';
 import SmartNumberInput from '../ui/forms/SmartNumberInput';
 import StatusButton from '../ui/StatusButton';
 import JoinHandler from '../ui/forms/JoinHandler';
-import ModalHeader from '../modals/ModalHeader';
+import DialogHeader from '../ui/dialog/DialogHeader';
 import { useUserList } from 'hooks/useUserList';
 
 interface ChangeDateInfoProps {
@@ -100,7 +100,7 @@ const ChangeDateInfo = ({ gameId, isGettingStarted }: ChangeDateInfoProps) => {
                     <ConvexDialog.Close iconProps={{ color: 'rgb(246, 238, 219)' }} className="w-10 h-10 bg-accent-hover absolute right-4 top-4 z-10" />
 
                     <Column>
-                        <ModalHeader
+                        <DialogHeader
                             text={isGettingStarted ? "Lets get some basics setup" : "Change Date Information"}
                             subtext="This can be changed later."
                         />

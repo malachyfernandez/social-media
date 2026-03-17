@@ -11,10 +11,6 @@ import { GameInfo } from 'types/games';
 import TopSiteBar from './layout/TopSiteBar';
 import ChooseGamePicker from './game/ChooseGamePicker';
 import GamePage from './game/GamePage';
-import { ModalProvider } from './modal/ModalContext';
-import GenericModal from './modal/GenericModal';
-import ModalRegistry from './modal/ModalRegistry';
-import ModalHeader from './modals/ModalHeader';
 import PoppinsTextInput from './ui/forms/PoppinsTextInput';
 import JoinHandler from './ui/forms/JoinHandler';
 
@@ -26,7 +22,7 @@ interface MainPageProps extends PropsWithChildren {
     className?: string;
 }
 
-const MainPageContent: React.FC<MainPageProps> = ({
+const MainPage: React.FC<MainPageProps> = ({
     className = '',
 }) => {
     const [isHeroDialogOpen, setIsHeroDialogOpen] = useState(false);
@@ -87,7 +83,6 @@ const MainPageContent: React.FC<MainPageProps> = ({
     return (
 
         <View className=' justify-between w-full h-full'>
-            <ModalRegistry />
             <View className='absolute right-4 top-20 z-10'>
                 {/* <Dialog isOpen={isHeroDialogOpen} onOpenChange={setIsHeroDialogOpen}>
                     <Dialog.Trigger asChild>
@@ -101,7 +96,7 @@ const MainPageContent: React.FC<MainPageProps> = ({
                             <Dialog.Close className='w-10 h-10 bg-accent-hover absolute right-4 top-4 z-10' iconProps={{ color: 'background' }} />
 
                             <Column>
-                                <ModalHeader
+                                <DialogHeader
                                     text="Join a Game"
                                     subtext="Enter a game code to join."
                                 />
@@ -137,16 +132,7 @@ const MainPageContent: React.FC<MainPageProps> = ({
                     currentUserId={userId}
                 />
             )}
-            <GenericModal />
         </View>
-    );
-};
-
-const MainPage: React.FC<MainPageProps> = (props) => {
-    return (
-        <ModalProvider>
-            <MainPageContent {...props} />
-        </ModalProvider>
     );
 };
 

@@ -4,9 +4,6 @@ import { useUserList } from 'hooks/useUserList';
 import Column from '../layout/Column';
 import AppButton from '../ui/buttons/AppButton';
 import prettyLog from 'utils/prettyLog';
-import DayConfigModal from '../modals/DayConfigModal';
-import useSimpleModal from '../modal/useSimpleModal';
-import SimpleJoinGameModal from '../modals/SimpleJoinGameModal';
 import ChangeDateInfo from './ChangeDateInfo';
 import Row from '../layout/Row';
 
@@ -94,7 +91,7 @@ const OperatorsPlayerPage = ({ currentUserId, gameId }: OperatorsPlayerPageProps
 
     return (
         <Column>
-            {/* if startingDate.value === "Unset" show modal */}
+            {/* if startingDate.value === "Unset" show dialog */}
             {isNoStartingDate ? (
                 <Row className='justify-center w-full'>
                     <ChangeDateInfo gameId={gameId} isGettingStarted={true} />

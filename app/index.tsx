@@ -8,7 +8,7 @@ import AuthButton from "./components/ui/buttons/AuthButton";
 import Column from "./components/layout/Column";
 import MainPage from "./components/MainPage";
 import PoppinsText from "./components/ui/text/PoppinsText";
-import ModalHeader from "./components/modals/ModalHeader";
+import DialogHeader from "./components/ui/dialog/DialogHeader";
 
 const useWarmUpBrowser = () => {
   useEffect(() => {
@@ -42,7 +42,7 @@ export default function HomeScreen() {
           <SignedOut>
 
             <Column className="w-[80vw] p-6 max-w-96 bg-text border-4 border-primary-accent items-center" gap={6}>
-              <ModalHeader
+              <DialogHeader
                 text="Welcome to WolffsPoint"
                 subtext="Sign in to get started."
                 className="w-[80vw] max-w-96"

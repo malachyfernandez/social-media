@@ -12,8 +12,6 @@ import PoppinsText from '../ui/text/PoppinsText';
 import GameList from './GameList';
 import NoGames from './NoGames';
 import { GameInfo, MyGames } from 'types/games';
-import { useSimpleModal } from '../modal/useSimpleModal';
-import SimpleJoinGameModal from '../modals/SimpleJoinGameModal';
 
 interface ChooseGamePickerProps {
     activeGameId: string;
@@ -39,10 +37,6 @@ const ChooseGamePicker = ({
         setGamesTheyJoined([...gamesTheyJoined.value, gameId]);
     };
 
-    const { showModal } = useSimpleModal();
-    const openJoinGameModal = () => {
-        showModal(SimpleJoinGameModal, { onJoin: joinGame });
-    };
 
     interface UserData {
         email?: string;
@@ -96,7 +90,7 @@ const ChooseGamePicker = ({
                                 entering={FadeInDown.duration(600)}
                                 exiting={FadeOutDown.duration(600)}
                             >
-                                <NoGames showModal={openJoinGameModal} />
+                                <NoGames joinGame={joinGame} />
                             </Animated.View>
                         </Column>
 
