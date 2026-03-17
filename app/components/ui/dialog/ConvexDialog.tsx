@@ -16,14 +16,16 @@ const ConvexDialogContent = ({ children }: { children: React.ReactNode }) => {
 };
 
 // Enhanced Dialog components with Convex context
-export const ConvexDialog = {
+const ConvexDialog = {
     Root: Dialog,
     Trigger: Dialog.Trigger,
     Portal: Dialog.Portal,
-    Overlay: Dialog.Overlay,
-    Content: ({ children, ...props }: any) => (
+    Overlay: ({ className, ...props }: any) => (
+        <Dialog.Overlay className="bg-black/20" {...props} />
+    ),
+    Content: ({ children, className, ...props }: any) => (
         <ConvexDialogContent>
-            <Dialog.Content {...props}>
+            <Dialog.Content className="bg-background rounded border-2 border-border" {...props}>
                 {children}
             </Dialog.Content>
         </ConvexDialogContent>
@@ -32,3 +34,5 @@ export const ConvexDialog = {
     Title: Dialog.Title,
     Description: Dialog.Description,
 };
+
+export default ConvexDialog;

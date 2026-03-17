@@ -40,11 +40,11 @@ const JoinGameButton = ({ onJoin }: JoinGameButtonProps) => {
                     </AppButton>
                 </ConvexDialog.Trigger>
                 <ConvexDialog.Portal>
-                    <ConvexDialog.Overlay className='bg-black/20' />
+                    <ConvexDialog.Overlay />
 
-                    <ConvexDialog.Content className='bg-background rounded border-2 border-border'>
+                    <ConvexDialog.Content>
 
-                        <ConvexDialog.Close className='w-10 h-10 bg-accent-hover absolute right-4 top-4 z-10' iconProps={{ color: 'rgb(246, 238, 219)' }} />
+                        <ConvexDialog.Close iconProps={{ color: 'rgb(246, 238, 219)' }} className="w-10 h-10 bg-accent-hover absolute right-4 top-4 z-10" />
 
                         <Column>
                             <ModalHeader

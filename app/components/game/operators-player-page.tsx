@@ -7,6 +7,8 @@ import prettyLog from 'utils/prettyLog';
 import DayConfigModal from '../modals/DayConfigModal';
 import useSimpleModal from '../modal/useSimpleModal';
 import SimpleJoinGameModal from '../modals/SimpleJoinGameModal';
+import ChangeDateInfo from './ChangeDateInfo';
+import Row from '../layout/Row';
 
 
 
@@ -73,11 +75,6 @@ const OperatorsPlayerPage = ({ currentUserId, gameId }: OperatorsPlayerPageProps
         defaultValue: "2",
     });
 
-    const { showModal } = useSimpleModal();
-    const openDayConfigModal = () => {
-        showModal(DayConfigModal, { setStartingDate, setRealDaysPerInGameDay });
-    };
-
     let isNoStartingDate = false;
 
     if (!startingDate.state.isSyncing) {
@@ -85,17 +82,11 @@ const OperatorsPlayerPage = ({ currentUserId, gameId }: OperatorsPlayerPageProps
     }
 
 
-    // open modal when no date is set
-    useEffect(() => {
-        if (isNoStartingDate) {
-            openDayConfigModal();
-        }
-    }, [isNoStartingDate]);
 
 
 
 
-
+    const isUsersEmpty = users.length === 0;
 
 
     // prettyLog(users);
@@ -105,24 +96,20 @@ const OperatorsPlayerPage = ({ currentUserId, gameId }: OperatorsPlayerPageProps
         <Column>
             {/* if startingDate.value === "Unset" show modal */}
             {isNoStartingDate ? (
-                <>
-
-                    <PoppinsText>Set starting date</PoppinsText>
-                    <AppButton variant="green" className='w-52 h-12'
-                        onPress={openDayConfigModal}
-                    >
-                        <PoppinsText weight='bold' className='text-white'>Get Started</PoppinsText>
-                    </AppButton>
-                </>
+                <Row className='justify-center w-full'>
+                    <ChangeDateInfo gameId={gameId} isGettingStarted={true} />
+                </Row>
             ) : (
                 <>
-                
+                <PoppinsText>Day:1</PoppinsText>
+                <PoppinsText>startingDate: {startingDate.value}</PoppinsText>
+                <PoppinsText>realDaysPerInGameDay: {realDaysPerInGameDay.value}</PoppinsText>
+                    <ChangeDateInfo gameId={gameId} isGettingStarted={false} />
+
                     {users.map((user, index) => (
                         <PoppinsText key={index}>{user.userId || 'Unnamed player'}</PoppinsText>
                     ))}
-                    <AppButton variant="black" className='w-12 h-12'
-                        onPress={openDayConfigModal}
-                    >
+                    <AppButton variant="black" className='w-12 h-12'>
                         <PoppinsText weight='bold' className='text-white text-2xl'>+</PoppinsText>
                     </AppButton>
                 </>

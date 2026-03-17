@@ -8,6 +8,7 @@ import { Slot } from "expo-router";
 import { HeroUINativeProvider } from "heroui-native/provider";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { tokenCache } from '../utils/tokenCache';
+import "../uniwind-types.d.ts";
 import "../global.css";
 
 const convex = new ConvexReactClient(process.env.EXPO_PUBLIC_CONVEX_URL!);
