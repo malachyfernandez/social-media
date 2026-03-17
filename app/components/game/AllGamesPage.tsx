@@ -12,6 +12,7 @@ import PoppinsText from '../ui/text/PoppinsText';
 import GameList from './GameList';
 import NoGames from './NoGames';
 import { GameInfo, MyGames } from 'types/games';
+import NewWolffspointButtonAndDialogue from './NewWolffspointButtonAndDialogue';
 
 interface AllGamesPageProps {
     activeGameId: string;
@@ -102,9 +103,8 @@ const AllGamesPage = ({
             {/* bottom bar */}
             <Column>
                 <Row className='p-6 border-t border-subtle-border justify-between'>
-                    <AppButton variant="outline" className="h-12 w-40 shrink" onPress={addNewGame}>
-                        <PoppinsText weight='medium' className='group-hover:text-white'>New WolffsPoint</PoppinsText>
-                    </AppButton>
+                    <NewWolffspointButtonAndDialogue onPress={addNewGame} />
+                    
 
                     {!isGamesPageEmpty && (
                         <JoinGameButton onJoin={joinGame} />
