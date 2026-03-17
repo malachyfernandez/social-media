@@ -9,7 +9,7 @@ import Row from '../layout/Row';
 
 
 
-interface OperatorsPlayerPageProps {
+interface PlayerPageOPERATORProps {
     currentUserId: string;
     gameId: string;
 }
@@ -37,7 +37,7 @@ type PlayerTableItem = {
     role: string;
 };
 
-const OperatorsPlayerPage = ({ currentUserId, gameId }: OperatorsPlayerPageProps) => {
+const PlayerPageOPERATOR = ({ currentUserId, gameId }: PlayerPageOPERATORProps) => {
 
     const [playerTable, setPlayerTable] = useUserList<PlayerTableItem[]>({
         key: "playerTable",
@@ -115,4 +115,4 @@ const OperatorsPlayerPage = ({ currentUserId, gameId }: OperatorsPlayerPageProps
     );
 };
 
-export default OperatorsPlayerPage;
+export default PlayerPageOPERATOR;

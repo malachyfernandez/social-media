@@ -84,38 +84,7 @@ const MainPage: React.FC<MainPageProps> = ({
 
         <View className=' justify-between w-full h-full'>
             <View className='absolute right-4 top-20 z-10'>
-                {/* <Dialog isOpen={isHeroDialogOpen} onOpenChange={setIsHeroDialogOpen}>
-                    <Dialog.Trigger asChild>
-                        <Button>Open HeroUI Dialog</Button>
-                    </Dialog.Trigger>
-                    <Dialog.Portal>
-                        <Dialog.Overlay className='bg-black/20' />
-                        
-                        <Dialog.Content className='bg-background rounded border-2 border-border'>
-
-                            <Dialog.Close className='w-10 h-10 bg-accent-hover absolute right-4 top-4 z-10' iconProps={{ color: 'background' }} />
-
-                            <Column>
-                                <DialogHeader
-                                    text="Join a Game"
-                                    subtext="Enter a game code to join."
-                                />
-
-                                
-                                <PoppinsTextInput
-                                    placeholder="Enter game code"
-                                    className="w-full border border-subtle-border p-2"
-                                    value={gameCode}
-                                    onChangeText={setGameCode}
-                                />
-                                <JoinHandler onJoin={handleJoin} gameCode={gameCode} />
-                                <PoppinsText varient='subtext'>
-                                    This dialog was opened from a HeroUI Native button inside `MainPage.tsx`.
-                                </PoppinsText>
-                            </Column>
-                        </Dialog.Content>
-                    </Dialog.Portal>
-                </Dialog> */}
+                
             </View>
 
             <TopSiteBar isInAGame={isInAGame} setActiveGameId={setActiveGameId} />
