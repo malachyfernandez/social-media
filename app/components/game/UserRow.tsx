@@ -13,25 +13,29 @@ interface UserRowProps {
         role: string;
         playerData: {
             livingState: 'alive' | 'dead';
-            extraColumns?: any[];
+            extraColumns?: string[];
         };
         days: Array<{
             votes?: string[];
             actions?: string[];
-            extraColumns?: any[];
+            extraColumns?: string[];
         }>;
     };
     index: number;
     isLast: boolean;
     setLivingState: (userIndex: number, newLivingState: 'alive' | 'dead') => void;
     setExtraColumnValue?: (userIndex: number, columnIndex: number, newValue: string) => void;
+    userTableColumnVisibility?: {
+        extraUserColumns: boolean[];
+        extraDayColumns: boolean[];
+    };
     onEditStart?: () => void;
     onEditEnd?: () => void;
     isEditing?: boolean;
 }
 
 
-const UserRow = ({ user, index, isLast, setLivingState, setExtraColumnValue, onEditStart, onEditEnd, isEditing }: UserRowProps) => {
+const UserRow = ({ user, index, isLast, setLivingState, setExtraColumnValue, userTableColumnVisibility, onEditStart, onEditEnd, isEditing }: UserRowProps) => {
     const [editingColumns, setEditingColumns] = useState<Record<number, boolean>>({});
 
     const toggleLivingState = () => {
@@ -67,19 +71,27 @@ const UserRow = ({ user, index, isLast, setLivingState, setExtraColumnValue, onE
                 <PoppinsText varient='subtext'>{user.role || 'No role'}</PoppinsText>
             </Column>
         
-            {user.playerData.extraColumns?.map((column, columnIndex) => (
-                <Column key={columnIndex} className={`w-28 h-full border border-subtle-border items-center justify-center ${isLast && columnIndex === (user.playerData.extraColumns?.length || 0) - 1 ? 'rounded-br-lg' : ''} ${editingColumns[columnIndex] ? 'z-50' : ''}`}>
-                    <InlineEditableText 
-                        value={column}
-                        onChange={(newValue) => setExtraColumnValue?.(index, columnIndex, newValue)}
-                        placeholder='UNSET'
-                        className='w-20 text-center text-nowrap overflow-hidden' 
-                        weight='medium' 
-                        onEditStart={() => handleColumnEditStart(columnIndex)}
-                        onEditEnd={() => handleColumnEditEnd(columnIndex)}
-                    />
-                </Column>
-            ))}
+            {user.playerData.extraColumns?.map((column, columnIndex) => {
+                if (!userTableColumnVisibility?.extraUserColumns[columnIndex]) return null;
+                
+                const visibleColumns = user.playerData.extraColumns?.filter((_, idx) => userTableColumnVisibility?.extraUserColumns[idx]) || [];
+                const visibleIndex = visibleColumns.indexOf(column);
+                const isLastVisibleColumn = visibleIndex === visibleColumns.length - 1;
+                
+                return (
+                    <Column key={columnIndex} className={`w-28 h-full border border-subtle-border items-center justify-center ${isLast && isLastVisibleColumn ? 'rounded-br-lg' : ''} ${editingColumns[columnIndex] ? 'z-50' : ''}`}>
+                        <InlineEditableText 
+                            value={column}
+                            onChange={(newValue) => setExtraColumnValue?.(index, columnIndex, newValue)}
+                            placeholder='UNSET'
+                            className='w-20 text-center text-nowrap overflow-hidden' 
+                            weight='medium' 
+                            onEditStart={() => handleColumnEditStart(columnIndex)}
+                            onEditEnd={() => handleColumnEditEnd(columnIndex)}
+                        />
+                    </Column>
+                );
+            })}
         </Row>
     );
 };
