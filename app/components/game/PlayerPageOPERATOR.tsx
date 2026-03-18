@@ -3,6 +3,7 @@ import PoppinsText from '../ui/text/PoppinsText';
 import { useUserList } from 'hooks/useUserList';
 import Column from '../layout/Column';
 import PlayerTable from './PlayerTable';
+import DaysTable from './DaysTable';
 import { UserTableItem } from 'types/playerTable';
 import AppButton from '../ui/buttons/AppButton';
 import Row from '../layout/Row';
@@ -42,6 +43,8 @@ const PlayerPageOPERATOR = ({ currentUserId, gameId }: PlayerPageOPERATORProps) 
 
 
     const [doSync, setDoSync] = useState(false);
+    const [isPlayerTableBeingEdited, setIsPlayerTableBeingEdited] = useState(false);
+    const [isDaysTableBeingEdited, setIsDaysTableBeingEdited] = useState(false);
 
 
     const addUser = () => {
@@ -71,19 +74,38 @@ const PlayerPageOPERATOR = ({ currentUserId, gameId }: PlayerPageOPERATORProps) 
                     <ChangeDateInfo gameId={gameId} isGettingStarted={false} /> */}
 
                 <ScrollShadow LinearGradientComponent={LinearGradient} color="#fdfbf6" className='mr-1'>
-                    {/* <Row > */}
-                        <ScrollView horizontal={true} className='px-1'>
+                {/* <Row > */}
+                <ScrollView horizontal={true} className='px-1 py-10'>
+                <Row>
+                    <Row className={isPlayerTableBeingEdited ? 'z-50' : ''}>
+                        <PlayerTable
+                            gameId={gameId}
+                            doSync={doSync}
+                            setDoSync={setDoSync}
+                            isBeingEdited={isPlayerTableBeingEdited}
+                            setIsBeingEdited={setIsPlayerTableBeingEdited}
+                        />
+                    </Row><Row className={isDaysTableBeingEdited ? 'z-10' : ''}>
+                        <DaysTable
+                            gameId={gameId}
+                            dayNumber={0}
+                            isBeingEdited={isDaysTableBeingEdited}
+                            setIsBeingEdited={setIsDaysTableBeingEdited}
+                        />
+                    </Row>
+                </Row>
 
-                            <PlayerTable gameId={gameId} doSync={doSync} setDoSync={setDoSync} />
-
-                        </ScrollView>
-                    {/* </Row> */}
+                </ScrollView>
+                {/* </Row> */}
 
                 </ScrollShadow>
                 <AppButton variant="black" className='w-40 h-12' onPress={addUser}>
                     <PoppinsText weight='bold' className='text-white text-xl'>+</PoppinsText>
                     <PoppinsText weight='bold' className='text-white'>Add Player</PoppinsText>
                 </AppButton>
+
+                <PoppinsText>isPlayerTableBeingEdited: {isPlayerTableBeingEdited.toString()}</PoppinsText>
+                <PoppinsText>isDaysTableBeingEdited: {isDaysTableBeingEdited.toString()}</PoppinsText>
             </>
 
         </Column>

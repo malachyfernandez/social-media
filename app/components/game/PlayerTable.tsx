@@ -13,18 +13,23 @@ interface PlayerTableProps {
     gameId: string;
     doSync: boolean;
     setDoSync: (value: boolean) => void;
+    isBeingEdited: boolean;
+    setIsBeingEdited: (value: boolean) => void;
+    className?: string;
 }
 
-const PlayerTable = ({ gameId, doSync, setDoSync }: PlayerTableProps) => {
+const PlayerTable = ({ gameId, doSync, setDoSync, isBeingEdited, setIsBeingEdited, className }: PlayerTableProps) => {
     const { executeCommand } = useUndoRedo();
     const [editingRow, setEditingRow] = useState<'title' | number | null>(null);
 
     const handleRowEditStart = (rowType: 'title' | number) => {
         setEditingRow(rowType);
+        setIsBeingEdited(true);
     };
 
     const handleRowEditEnd = () => {
         setEditingRow(null);
+        setIsBeingEdited(false);
     };
 
     const [userTable, setUserTable] = useUserList<UserTableItem[]>({
@@ -268,7 +273,7 @@ const PlayerTable = ({ gameId, doSync, setDoSync }: PlayerTableProps) => {
     return (
         <Column gap={0}>
             <Row gap={0}>
-                <Column gap={0} className='border-border border-2 rounded w-min z-10'>
+                <Column gap={0} className={`border-border border-2 rounded w-min ${className || ''}`}>
                     <TitleRow
                         userTableTitle={userTableTitle?.value}
                         userTableColumnVisibility={userTableColumnVisibility?.value}
@@ -294,9 +299,9 @@ const PlayerTable = ({ gameId, doSync, setDoSync }: PlayerTableProps) => {
                         />
                     ))}
                 </Column>
-                <Row className='w-12 h-12 bg-light items-center justify-center'>
+                <Row className='w-12 h-12 bg-light items-center justify-center -z-10'>
                     <AppButton variant="green" className='w-8 max-h-8 ' onPress={UNDOABLEaddColumn}>
-                        <PoppinsText weight='bold' color='white' className='text-xl mt-[-0.1rem]'>+</PoppinsText>
+                        <PoppinsText weight='bold' color='white' className='text-xl mt-[-0.1rem] '>+</PoppinsText>
                     </AppButton>
                 </Row>
 
