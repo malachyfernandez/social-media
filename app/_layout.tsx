@@ -8,6 +8,7 @@ import { Slot } from "expo-router";
 import { HeroUINativeProvider } from "heroui-native/provider";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { tokenCache } from '../utils/tokenCache';
+import { ToastProvider } from '../contexts/ToastContext';
 import "../uniwind-types.d.ts";
 import "../global.css";
 
@@ -17,21 +18,23 @@ const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <HeroUINativeProvider
-        config={{
-          devInfo: {
-            stylingPrinciples: false,
-          },
-        }}
-      >
-        <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
-          <ClerkLoaded>
-            <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
-              <Slot />
-            </ConvexProviderWithClerk>
-          </ClerkLoaded>
-        </ClerkProvider>
-      </HeroUINativeProvider>
+      <ToastProvider>
+        <HeroUINativeProvider
+          config={{
+            devInfo: {
+              stylingPrinciples: false,
+            },
+          }}
+        >
+          <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
+            <ClerkLoaded>
+              <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
+                <Slot />
+              </ConvexProviderWithClerk>
+            </ClerkLoaded>
+          </ClerkProvider>
+        </HeroUINativeProvider>
+      </ToastProvider>
     </GestureHandlerRootView>
   );
 }

@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { useToast } from '../contexts/ToastContext';
+import { useToast, Toast } from 'heroui-native';
 
 export interface UndoCommand {
   action: () => void;
@@ -8,7 +8,7 @@ export interface UndoCommand {
 }
 
 export const useUndoRedo = () => {
-  const { showToast } = useToast();
+  const { toast } = useToast();
 
   const [undoStack, setUndoStack] = useState<UndoCommand[]>([]);
   const [redoStack, setRedoStack] = useState<UndoCommand[]>([]);
@@ -44,8 +44,16 @@ export const useUndoRedo = () => {
     syncUndoStack(currentUndo.slice(0, -1));
     syncRedoStack([...redoStackRef.current, command]);
 
-    showToast(`Undo: ${command.description}`);
-  }, [showToast]);
+    toast.show({
+      component: (props) => (
+        <Toast variant="default" {...props}>
+          <Toast.Title>Undo: {command.description}</Toast.Title>
+          <Toast.Close className="absolute top-0 right-0" />
+        </Toast>
+      ),
+      duration: 1000,
+    });
+  }, [toast]);
 
   const redo = useCallback(() => {
     const currentRedo = redoStackRef.current;
@@ -57,8 +65,16 @@ export const useUndoRedo = () => {
     syncRedoStack(currentRedo.slice(0, -1));
     syncUndoStack([...undoStackRef.current, command]);
 
-    showToast(`Redo: ${command.description}`);
-  }, [showToast]);
+    toast.show({
+      component: (props) => (
+        <Toast variant="default" {...props}>
+          <Toast.Title>Redo: {command.description}</Toast.Title>
+          <Toast.Close className="absolute top-0 right-0" />
+        </Toast>
+      ),
+      duration: 1000,
+    });
+  }, [toast]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
