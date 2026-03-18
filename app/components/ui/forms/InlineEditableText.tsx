@@ -131,6 +131,8 @@ const InlineEditableText = ({
                 className={`${getTailwindColor()} ${getClassName()}`}
                 style={{
                     fontFamily: fontsLoaded ? getFontFamily() : undefined,
+                    textDecorationLine: 'underline',
+                    textDecorationStyle: 'dotted',
                     ...style
                 }}
             >

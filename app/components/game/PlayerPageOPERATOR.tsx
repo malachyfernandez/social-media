@@ -69,13 +69,13 @@ const PlayerPageOPERATOR = ({ currentUserId, gameId }: PlayerPageOPERATORProps) 
             {/* if startingDate.value === "Unset" show dialog */}
 
             <>
-                <PoppinsText>startingDate: {startingDate.value}</PoppinsText>
+                {/* <PoppinsText>startingDate: {startingDate.value}</PoppinsText> */}
                 {/*<PoppinsText>realDaysPerInGameDay: {realDaysPerInGameDay.value}</PoppinsText>
                     <ChangeDateInfo gameId={gameId} isGettingStarted={false} /> */}
 
                 <ScrollShadow LinearGradientComponent={LinearGradient} color="#fdfbf6" className='mr-1'>
                 {/* <Row > */}
-                <ScrollView horizontal={true} className='px-1 py-10'>
+                <ScrollView horizontal={true} className='px-1 py-5'>
                 <Row>
                     <Row className={isPlayerTableBeingEdited ? 'z-50' : ''}>
                         <PlayerTable
@@ -99,7 +99,7 @@ const PlayerPageOPERATOR = ({ currentUserId, gameId }: PlayerPageOPERATORProps) 
                 {/* </Row> */}
 
                 </ScrollShadow>
-                <AppButton variant="black" className='w-40 h-12' onPress={addUser}>
+                <AppButton variant="black" className='w-40 h-8 ml-4 -mt-6' onPress={addUser}>
                     <PoppinsText weight='bold' className='text-white text-xl'>+</PoppinsText>
                     <PoppinsText weight='bold' className='text-white'>Add Player</PoppinsText>
                 </AppButton>
