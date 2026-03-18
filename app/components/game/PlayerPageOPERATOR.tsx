@@ -5,6 +5,10 @@ import Column from '../layout/Column';
 import PlayerTable from './PlayerTable';
 import { UserTableItem } from 'types/playerTable';
 import AppButton from '../ui/buttons/AppButton';
+import Row from '../layout/Row';
+import { ScrollShadow } from 'heroui-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { ScrollView } from 'react-native';
 
 
 
@@ -66,7 +70,16 @@ const PlayerPageOPERATOR = ({ currentUserId, gameId }: PlayerPageOPERATORProps) 
                 {/*<PoppinsText>realDaysPerInGameDay: {realDaysPerInGameDay.value}</PoppinsText>
                     <ChangeDateInfo gameId={gameId} isGettingStarted={false} /> */}
 
-                <PlayerTable gameId={gameId} doSync={doSync} setDoSync={setDoSync} />
+                <ScrollShadow LinearGradientComponent={LinearGradient} color="#fdfbf6" className='mr-1'>
+                    {/* <Row > */}
+                        <ScrollView horizontal={true} className='px-1'>
+
+                            <PlayerTable gameId={gameId} doSync={doSync} setDoSync={setDoSync} />
+
+                        </ScrollView>
+                    {/* </Row> */}
+
+                </ScrollShadow>
                 <AppButton variant="black" className='w-40 h-12' onPress={addUser}>
                     <PoppinsText weight='bold' className='text-white text-xl'>+</PoppinsText>
                     <PoppinsText weight='bold' className='text-white'>Add Player</PoppinsText>
