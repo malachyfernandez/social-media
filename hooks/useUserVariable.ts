@@ -1,10 +1,9 @@
-
-
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { useEffect, useRef, useState } from "react";
 import { devWarn } from "../utils/devWarnings";
 import { userVarConfig } from "../utils/userVarConfig";
+import { decodeUserValue, encodeUserValue } from "./userValueSerialization";
 
 type ObjectKeys<T> = T extends object ? Extract<keyof T, string> : never;
 type PrimitiveIndexValue = string | number | boolean;
@@ -262,15 +261,20 @@ export function useUserVariable<T>({
     const opIdRef = useRef(0);
     const didAutoCreateRef = useRef(false);
 
+    const decodedRecordValue =
+        record?.value === undefined
+            ? undefined
+            : decodeUserValue(record.value as T);
+
     const baseValue: T = isSyncing
         ? (defaultValue as T)
-        : ((record?.value ?? defaultValue) as T);
+        : ((decodedRecordValue ?? defaultValue) as T);
 
     useEffect(() => {
         if (record === undefined || record === null) return;
         if (pendingOpRef.current) return;
 
-        const next = record.value as T;
+        const next = decodeUserValue(record.value as T);
         confirmedValueRef.current = next;
         setConfirmedValue(next);
     }, [record]);
@@ -329,6 +333,7 @@ export function useUserVariable<T>({
     const setValue = (newValue: T) => {
         const startedAt = Date.now();
         const opId = (opIdRef.current += 1);
+        const encodedValue = encodeUserValue(newValue);
 
         const existingPending = pendingOpRef.current;
         if (existingPending?.timeoutHandle) {
@@ -391,7 +396,7 @@ export function useUserVariable<T>({
 
         const mutationPromise = setMutation({
             key,
-            value: newValue,
+            value: encodedValue,
             privacy: backendPrivacy,
             filterKey,
             searchKeys,
@@ -441,6 +446,11 @@ export function useUserVariable<T>({
                 }
 
                 pendingOpRef.current = null;
+                setOpState({
+                    lastOpStatus: "idle",
+                    lastOpStartedAt: undefined,
+                    lastOpTimedOutAt: undefined,
+                });
             });
     };
 

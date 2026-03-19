@@ -1,6 +1,7 @@
 import { useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
 import type { Privacy } from "./useUserList";
+import { encodeUserValue } from "./userValueSerialization";
 
 type ObjectKeys<T> = T extends object ? Extract<keyof T, string> : never;
 
@@ -135,11 +136,12 @@ export function useUserListSet<T = any>() {
     const backendPrivacy = Array.isArray(privacy)
       ? { allowList: privacy }
       : privacy;
+    const encodedValue = encodeUserValue(value);
 
     return mutation({
       key,
       itemId,
-      value,
+      value: encodedValue,
       privacy: backendPrivacy,
       filterKey,
       searchKeys,

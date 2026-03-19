@@ -1,6 +1,7 @@
 import { useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import type { UserListRecord } from "./useUserList";
+import { decodeUserValue } from "./userValueSerialization";
 
 type PrimitiveIndexValue = string | number | boolean;
 
@@ -69,5 +70,8 @@ export function useUserListGet<TValue = any>({
     startAfter,
   });
 
-  return results as UserListRecord<TValue>[] | undefined;
+  return results?.map((record) => ({
+    ...record,
+    value: decodeUserValue(record.value as TValue),
+  })) as UserListRecord<TValue>[] | undefined;
 }

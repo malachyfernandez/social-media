@@ -41,6 +41,27 @@ const NewWolffspointButtonAndDialogue = ({ onPress }: NewWolffspointButtonAndDia
     const newGameId = generateGameId();
 
 
+    const dateToStorageString = (date: Date): string => {
+        return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
+    };
+
+    const parseDateString = (dateStr: string): Date => {
+        const parts = dateStr.split('/').map(Number);
+        
+        // Handle MM/DD format (assume current year)
+        if (parts.length === 2) {
+            return new Date(new Date().getFullYear(), parts[0] - 1, parts[1]);
+        }
+        
+        // Handle MM/DD/YYYY format
+        if (parts.length === 3) {
+            return new Date(parts[2], parts[0] - 1, parts[1]);
+        }
+        
+        // Fallback to today if invalid format
+        return new Date();
+    };
+
     const submitForum = () => {
         const finalInput = input || "WolffsPoint";
 
@@ -55,7 +76,8 @@ const NewWolffspointButtonAndDialogue = ({ onPress }: NewWolffspointButtonAndDia
         setUserListItem({
             key: "dayDatesArray",
             itemId: newGameId,
-            value: [date],
+            value: [dateToStorageString(parseDateString(date || ''))],
+            // value: [dateToStorageString(parseDateString('04/23/2025'))],
             privacy: "PUBLIC",
         });
 

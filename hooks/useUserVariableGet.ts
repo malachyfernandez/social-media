@@ -1,6 +1,7 @@
 import { useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import type { UserVariableRecord } from "./useUserVariable";
+import { decodeUserValue } from "./userValueSerialization";
 
 type PrimitiveIndexValue = string | number | boolean;
 
@@ -70,5 +71,8 @@ export function useUserVariableGet<TValue = any>({
     startAfter,
   });
 
-  return results as UserVariableRecord<TValue>[] | undefined;
+  return results?.map((record) => ({
+    ...record,
+    value: decodeUserValue(record.value as TValue),
+  })) as UserVariableRecord<TValue>[] | undefined;
 }

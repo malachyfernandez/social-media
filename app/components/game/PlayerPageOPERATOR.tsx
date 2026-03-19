@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import PoppinsText from '../ui/text/PoppinsText';
 import { useUserList } from 'hooks/useUserList';
 import Column from '../layout/Column';
@@ -10,6 +10,8 @@ import Row from '../layout/Row';
 import { ScrollShadow } from 'heroui-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ScrollView } from 'react-native';
+import DaySelectionDialog from './DaySelectionDialog';
+import prettyLog from 'utils/prettyLog';
 
 
 
@@ -53,26 +55,42 @@ const PlayerPageOPERATOR = ({ currentUserId, gameId }: PlayerPageOPERATORProps) 
         defaultValue: 2,
     });
 
-    const [dayDatesArray, setDayDatesArray] = useUserList<Date[]>({
+    const [dayDatesArray, setDayDatesArray] = useUserList<string[]>({
         key: "dayDatesArray",
         itemId: gameId,
         privacy: "PUBLIC",
         defaultValue: [],
     });
 
-    // Initialize dayDatesArray with today's date if empty
-    React.useEffect(() => {
-        if (dayDatesArray.value.length === 0) {
-            setDayDatesArray([new Date()]);
+    // Convert stored MM/DD/YYYY strings back to real Date objects for UI use
+    const fixedDayDatesArray = dayDatesArray.value.map(dateStr => {
+        const [month, day, year] = dateStr.split('/').map(Number);
+        return new Date(year, month - 1, day);
+    });
+
+    // Helper: convert Date to MM/DD/YYYY string
+    const dateToStorageString = (date: Date): string => {
+        return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
+    };
+
+    // Clean setter that accepts Date[] and handles string conversion internally
+    const setFixedDayDatesArray = (dates: Date[]) => {
+        setDayDatesArray(dates.map(dateToStorageString));
+    };
+
+    
+    useEffect(() => {
+        if (dayDatesArray.value.length === 0 && dayDatesArray.state.isSyncing === false) {
+            setFixedDayDatesArray([new Date()]);
         }
-    }, [dayDatesArray.value.length, setDayDatesArray]);
+    }, [dayDatesArray, setFixedDayDatesArray]);
 
     const addNewDay = () => {
-        const currentDays = [...dayDatesArray.value];
+        const currentDays = [...fixedDayDatesArray];
         const lastDate = currentDays[currentDays.length - 1];
         const newDate = new Date(lastDate);
         newDate.setDate(newDate.getDate() + numberOfRealDaysPerInGameDay.value);
-        setDayDatesArray([...currentDays, newDate]);
+        setFixedDayDatesArray([...currentDays, newDate]);
     };
 
 
@@ -83,7 +101,16 @@ const PlayerPageOPERATOR = ({ currentUserId, gameId }: PlayerPageOPERATORProps) 
     const [isPlayerTableBeingEdited, setIsPlayerTableBeingEdited] = useState(false);
     const [isDaysTableBeingEdited, setIsDaysTableBeingEdited] = useState(false);
     const [daysTableWidth, setDaysTableWidth] = useState(320); // default width
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
 
+
+    const replaceDayDate = (index: number, replacementDate: Date) => {
+        const currentDays = [...fixedDayDatesArray];
+        if (index >= 0 && index < currentDays.length) {
+            currentDays[index] = replacementDate;
+            setFixedDayDatesArray(currentDays);
+        }
+    };
 
     const addUser = () => {
         const newUser: UserTableItem = {
@@ -97,6 +124,8 @@ const PlayerPageOPERATOR = ({ currentUserId, gameId }: PlayerPageOPERATORProps) 
         setUserTable([...users, newUser]);
         setDoSync(true);
     };
+
+
 
 
 
@@ -135,15 +164,28 @@ const PlayerPageOPERATOR = ({ currentUserId, gameId }: PlayerPageOPERATORProps) 
                                 <ScrollShadow LinearGradientComponent={LinearGradient} color="#fdfbf6" className='mr-1 pr-1 max-w-min'>
                                     <ScrollView horizontal={true} className='px-1 m-0 h-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]' style={{ width: daysTableWidth }}>
                                         <Row className='h-6' gap={1}>
-                                            {dayDatesArray.value.map((date, index) => (
-                                                <AppButton
-                                                    key={index}
-                                                    variant={selectedDayIndex.value === index ? "black" : "grey"}
-                                                    className='w-16 max-h-6'
-                                                    onPress={() => setSelectedDayIndex(index)}
-                                                >
-                                                    <PoppinsText className='text-white'>Day {index}</PoppinsText>
-                                                </AppButton>
+                                            {fixedDayDatesArray.map((date, index) => (
+                                                selectedDayIndex.value === index ? (
+                                                    <DaySelectionDialog
+                                                        key={index}
+                                                        isOpen={isDialogOpen}
+                                                        onOpenChange={setIsDialogOpen}
+                                                        index={index}
+                                                        dayDate={date}
+                                                        previousDate={index > 0 ? fixedDayDatesArray[index - 1] : new Date()}
+                                                        onPress={() => setSelectedDayIndex(index)}
+                                                        replaceDayDate={replaceDayDate}
+                                                    />
+                                                ) : (
+                                                    <AppButton
+                                                        key={index}
+                                                        variant="grey"
+                                                        className='w-16 max-h-6'
+                                                        onPress={() => setSelectedDayIndex(index)}
+                                                    >
+                                                        <PoppinsText className='text-white'>{fixedDayDatesArray[index].getMonth() + 1}/{fixedDayDatesArray[index].getDate()}</PoppinsText>
+                                                    </AppButton>
+                                                )
                                             ))}
                                             <AppButton variant="green" className='max-w-6 min-w-6 max-h-6 ml-1 rounded-full' onPress={addNewDay}>
                                                 <PoppinsText weight="bold" className='text-white'>+</PoppinsText>
@@ -151,7 +193,7 @@ const PlayerPageOPERATOR = ({ currentUserId, gameId }: PlayerPageOPERATORProps) 
                                         </Row>
                                     </ScrollView>
                                 </ScrollShadow>
-                                <Row className={`${isDaysTableBeingEdited ? 'z-10' : '' } w-min max-w-min`}>
+                                <Row className={`${isDaysTableBeingEdited ? 'z-10' : ''} w-min max-w-min`}>
                                     <DaysTable
                                         gameId={gameId}
                                         dayNumber={selectedDayIndex.value}
@@ -178,9 +220,16 @@ const PlayerPageOPERATOR = ({ currentUserId, gameId }: PlayerPageOPERATORProps) 
                     <PoppinsText weight='bold' className='text-white'>Add Player</PoppinsText>
                 </AppButton>
 
+{/* testing function. */}
+                {/* <AppButton variant="green" className='w-40 h-8 ml-4 -mt-6' onPress={() => replaceDayDate(1, new Date())}>
+                    <PoppinsText weight='bold' className='text-white'>Set Day 1 to Today</PoppinsText>
+                </AppButton> */}
+
                 <PoppinsText>isPlayerTableBeingEdited: {isPlayerTableBeingEdited.toString()}</PoppinsText>
                 <PoppinsText>isDaysTableBeingEdited: {isDaysTableBeingEdited.toString()}</PoppinsText>
             </>
+
+            
 
         </Column>
     );

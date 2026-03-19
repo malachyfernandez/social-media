@@ -22,6 +22,11 @@ const prettyLog = (data: LoggableData, title?: string): void => {
             ].join('\n');
         }
         
+        // Handle Date objects before generic object handling
+        if (value instanceof Date) {
+            return `Date("${value.toISOString()}")`;
+        }
+
         // Handle objects
         if (typeof value === 'object') {
             const keys = Object.keys(value);
