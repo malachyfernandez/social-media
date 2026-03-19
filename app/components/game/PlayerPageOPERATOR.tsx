@@ -91,6 +91,12 @@ const PlayerPageOPERATOR = ({ currentUserId, gameId }: PlayerPageOPERATORProps) 
         const newDate = new Date(lastDate);
         newDate.setDate(newDate.getDate() + numberOfRealDaysPerInGameDay.value);
         setFixedDayDatesArray([...currentDays, newDate]);
+        
+        // Sync the table to add the new day to all users
+        setDoSync(true);
+        
+        // Snap to the newest day
+        setSelectedDayIndex(currentDays.length);
     };
 
 
@@ -157,6 +163,7 @@ const PlayerPageOPERATOR = ({ currentUserId, gameId }: PlayerPageOPERATORProps) 
                                         setDoSync={setDoSync}
                                         isBeingEdited={isPlayerTableBeingEdited}
                                         setIsBeingEdited={setIsPlayerTableBeingEdited}
+                                        dayDatesArray={fixedDayDatesArray}
                                     />
                                 </Row>
                             </Column>
@@ -237,7 +244,4 @@ const PlayerPageOPERATOR = ({ currentUserId, gameId }: PlayerPageOPERATORProps) 
 };
 
 export default PlayerPageOPERATOR;
-function syncAllColumnsToTitles() {
-    throw new Error('Function not implemented.');
-}
 

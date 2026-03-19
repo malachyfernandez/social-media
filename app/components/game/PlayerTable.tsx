@@ -16,9 +16,10 @@ interface PlayerTableProps {
     isBeingEdited: boolean;
     setIsBeingEdited: (value: boolean) => void;
     className?: string;
+    dayDatesArray: Date[];
 }
 
-const PlayerTable = ({ gameId, doSync, setDoSync, isBeingEdited, setIsBeingEdited, className }: PlayerTableProps) => {
+const PlayerTable = ({ gameId, doSync, setDoSync, isBeingEdited, setIsBeingEdited, className, dayDatesArray }: PlayerTableProps) => {
     const { executeCommand } = useUndoRedo();
     const [editingRow, setEditingRow] = useState<'title' | number | null>(null);
 
@@ -85,21 +86,26 @@ const PlayerTable = ({ gameId, doSync, setDoSync, isBeingEdited, setIsBeingEdite
         };
         setUserTableColumnVisibility(updatedVisibility);
 
-        // Sync user table rows to match titles length
+        // Sync user table rows to match titles length and ensure all users have correct number of days
+        const targetDaysLength = dayDatesArray.length;
         const updatedUsers = users.map(user => {
             const userExtraColumns = user.playerData.extraColumns || [];
             const syncedUserExtraColumns = Array(targetUserLength).fill("").map((_, index) =>
                 userExtraColumns[index] ?? ""
             );
 
-            const syncedDays = user.days.map(day => {
-                const dayExtraColumns = day.extraColumns || [];
-                const syncedDayExtraColumns = Array(targetDayLength).fill("").map((_, index) =>
-                    dayExtraColumns[index] ?? ""
+            // Ensure user has the correct number of days
+            const currentDays = user.days || [];
+            const syncedDays = Array(targetDaysLength).fill(null).map((_, index) => {
+                const existingDay = currentDays[index];
+                const dayExtraColumns = existingDay?.extraColumns || [];
+                const syncedDayExtraColumns = Array(targetDayLength).fill("").map((_, colIndex) =>
+                    dayExtraColumns[colIndex] ?? ""
                 );
 
                 return {
-                    ...day,
+                    vote: existingDay?.vote || "",
+                    action: existingDay?.action || "",
                     extraColumns: syncedDayExtraColumns
                 };
             });
