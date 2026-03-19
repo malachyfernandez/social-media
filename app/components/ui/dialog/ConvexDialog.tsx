@@ -25,7 +25,7 @@ const ConvexDialog = {
     ),
     Content: ({ children, className, ...props }: any) => (
         <ConvexDialogContent>
-            <Dialog.Content className="bg-background rounded border-2 border-border" {...props}>
+            <Dialog.Content className="bg-background rounded border-2 border-border max-w-2xl w-full mx-auto" {...props}>
                 {children}
             </Dialog.Content>
         </ConvexDialogContent>

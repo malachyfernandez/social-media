@@ -302,6 +302,7 @@ const PlayerTable = ({ gameId, doSync, setDoSync, isBeingEdited, setIsBeingEdite
                             onEditStart={() => handleRowEditStart(index)}
                             onEditEnd={handleRowEditEnd}
                             isEditing={editingRow === index}
+                            gameId={gameId}
                         />
                     ))}
                 </Column>

@@ -7,6 +7,7 @@ import { ConvexReactClient } from "convex/react";
 import { Slot } from "expo-router";
 import { HeroUINativeProvider } from "heroui-native/provider";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { PortalHost } from "@rn-primitives/portal";
 import { tokenCache } from '../utils/tokenCache';
 import { ToastProvider } from '../contexts/ToastContext';
 import "../uniwind-types.d.ts";
@@ -30,6 +31,7 @@ export default function RootLayout() {
             <ClerkLoaded>
               <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
                 <Slot />
+                <PortalHost />
               </ConvexProviderWithClerk>
             </ClerkLoaded>
           </ClerkProvider>
