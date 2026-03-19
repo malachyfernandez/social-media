@@ -9,7 +9,7 @@ import AppButton from '../ui/buttons/AppButton';
 import Row from '../layout/Row';
 import { ScrollShadow } from 'heroui-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ScrollView } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import DaySelectionDialog from './DaySelectionDialog';
 import prettyLog from 'utils/prettyLog';
 
@@ -78,7 +78,7 @@ const PlayerPageOPERATOR = ({ currentUserId, gameId }: PlayerPageOPERATORProps) 
         setDayDatesArray(dates.map(dateToStorageString));
     };
 
-    
+
     useEffect(() => {
         if (dayDatesArray.value.length === 0 && dayDatesArray.state.isSyncing === false) {
             setFixedDayDatesArray([new Date()]);
@@ -91,10 +91,10 @@ const PlayerPageOPERATOR = ({ currentUserId, gameId }: PlayerPageOPERATORProps) 
         const newDate = new Date(lastDate);
         newDate.setDate(newDate.getDate() + numberOfRealDaysPerInGameDay.value);
         setFixedDayDatesArray([...currentDays, newDate]);
-        
+
         // Sync the table to add the new day to all users
         setDoSync(true);
-        
+
         // Snap to the newest day
         setSelectedDayIndex(currentDays.length);
     };
@@ -141,102 +141,101 @@ const PlayerPageOPERATOR = ({ currentUserId, gameId }: PlayerPageOPERATORProps) 
 
 
         <Column>
-            {/* if startingDate.value === "Unset" show dialog */}
 
-            <>
-                {/* <PoppinsText>startingDate: {startingDate.value}</PoppinsText> */}
-                {/*<PoppinsText>realDaysPerInGameDay: {realDaysPerInGameDay.value}</PoppinsText>
-                    <ChangeDateInfo gameId={gameId} isGettingStarted={false} /> */}
+            {users.length > 0 ? (
+                <Column>
+                    <ScrollShadow LinearGradientComponent={LinearGradient} color="#fdfbf6" className='mr-1'>
+                        {/* <Row > */}
+                        <ScrollView horizontal={true} className='px-1 py-5'>
+                            <Row>
+                                <Column gap={1}>
+                                    <Row className='h-6'>
+                                        {/* spacer to align with days table */}
+                                    </Row>
+                                    <Row className={isPlayerTableBeingEdited ? 'z-50' : ''}>
+                                        <PlayerTable
+                                            gameId={gameId}
+                                            doSync={doSync}
+                                            setDoSync={setDoSync}
+                                            isBeingEdited={isPlayerTableBeingEdited}
+                                            setIsBeingEdited={setIsPlayerTableBeingEdited}
+                                            dayDatesArray={fixedDayDatesArray}
+                                        />
+                                    </Row>
+                                </Column>
+                                <Column gap={1}>
+                                    <ScrollShadow LinearGradientComponent={LinearGradient} color="#fdfbf6" className='mr-1 pr-1 max-w-min'>
+                                        <ScrollView horizontal={true} className='px-1 m-0 h-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]' style={{ width: daysTableWidth }}>
+                                            <Row className='h-6' gap={1}>
+                                                {fixedDayDatesArray.map((date, index) => (
+                                                    selectedDayIndex.value === index ? (
+                                                        <DaySelectionDialog
+                                                            key={index}
+                                                            isOpen={isDialogOpen}
+                                                            onOpenChange={setIsDialogOpen}
+                                                            index={index}
+                                                            dayDate={date}
+                                                            previousDate={index > 0 ? fixedDayDatesArray[index - 1] : new Date()}
+                                                            followingDate={index < fixedDayDatesArray.length - 1 ? fixedDayDatesArray[index + 1] : undefined}
+                                                            onPress={() => setSelectedDayIndex(index)}
+                                                            replaceDayDate={replaceDayDate}
+                                                        />
+                                                    ) : (
+                                                        <AppButton
+                                                            key={index}
+                                                            variant="grey"
+                                                            className='w-16 max-h-6'
+                                                            onPress={() => setSelectedDayIndex(index)}
+                                                        >
+                                                            <PoppinsText className='text-white'>{fixedDayDatesArray[index].getMonth() + 1}/{fixedDayDatesArray[index].getDate()}</PoppinsText>
+                                                        </AppButton>
+                                                    )
+                                                ))}
+                                                <AppButton variant="green" className='max-w-6 min-w-6 max-h-6 ml-1 rounded-full' onPress={addNewDay}>
+                                                    <PoppinsText weight="bold" className='text-white'>+</PoppinsText>
+                                                </AppButton>
+                                            </Row>
+                                        </ScrollView>
+                                    </ScrollShadow>
+                                    <Row className={`${isDaysTableBeingEdited ? 'z-10' : ''} w-min max-w-min`}>
+                                        <DaysTable
+                                            gameId={gameId}
+                                            dayNumber={selectedDayIndex.value}
+                                            isBeingEdited={isDaysTableBeingEdited}
+                                            setIsBeingEdited={setIsDaysTableBeingEdited}
+                                            onLayout={(event) => {
+                                                const { width } = event.nativeEvent.layout;
+                                                setDaysTableWidth(width);
+                                            }}
+                                            onWidthChange={(width) => {
+                                                setDaysTableWidth(width);
+                                            }}
+                                        />
+                                    </Row>
+                                </Column>
+                            </Row>
 
-                <ScrollShadow LinearGradientComponent={LinearGradient} color="#fdfbf6" className='mr-1'>
-                    {/* <Row > */}
-                    <ScrollView horizontal={true} className='px-1 py-5'>
-                        <Row>
-                            <Column gap={1}>
-                                <Row className='h-6'>
-                                    {/* spacer to align with days table */}
-                                </Row>
-                                <Row className={isPlayerTableBeingEdited ? 'z-50' : ''}>
-                                    <PlayerTable
-                                        gameId={gameId}
-                                        doSync={doSync}
-                                        setDoSync={setDoSync}
-                                        isBeingEdited={isPlayerTableBeingEdited}
-                                        setIsBeingEdited={setIsPlayerTableBeingEdited}
-                                        dayDatesArray={fixedDayDatesArray}
-                                    />
-                                </Row>
-                            </Column>
-                            <Column gap={1}>
-                                <ScrollShadow LinearGradientComponent={LinearGradient} color="#fdfbf6" className='mr-1 pr-1 max-w-min'>
-                                    <ScrollView horizontal={true} className='px-1 m-0 h-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]' style={{ width: daysTableWidth }}>
-                                        <Row className='h-6' gap={1}>
-                                            {fixedDayDatesArray.map((date, index) => (
-                                                selectedDayIndex.value === index ? (
-                                                    <DaySelectionDialog
-                                                        key={index}
-                                                        isOpen={isDialogOpen}
-                                                        onOpenChange={setIsDialogOpen}
-                                                        index={index}
-                                                        dayDate={date}
-                                                        previousDate={index > 0 ? fixedDayDatesArray[index - 1] : new Date()}
-                                                        followingDate={index < fixedDayDatesArray.length - 1 ? fixedDayDatesArray[index + 1] : undefined}
-                                                        onPress={() => setSelectedDayIndex(index)}
-                                                        replaceDayDate={replaceDayDate}
-                                                    />
-                                                ) : (
-                                                    <AppButton
-                                                        key={index}
-                                                        variant="grey"
-                                                        className='w-16 max-h-6'
-                                                        onPress={() => setSelectedDayIndex(index)}
-                                                    >
-                                                        <PoppinsText className='text-white'>{fixedDayDatesArray[index].getMonth() + 1}/{fixedDayDatesArray[index].getDate()}</PoppinsText>
-                                                    </AppButton>
-                                                )
-                                            ))}
-                                            <AppButton variant="green" className='max-w-6 min-w-6 max-h-6 ml-1 rounded-full' onPress={addNewDay}>
-                                                <PoppinsText weight="bold" className='text-white'>+</PoppinsText>
-                                            </AppButton>
-                                        </Row>
-                                    </ScrollView>
-                                </ScrollShadow>
-                                <Row className={`${isDaysTableBeingEdited ? 'z-10' : ''} w-min max-w-min`}>
-                                    <DaysTable
-                                        gameId={gameId}
-                                        dayNumber={selectedDayIndex.value}
-                                        isBeingEdited={isDaysTableBeingEdited}
-                                        setIsBeingEdited={setIsDaysTableBeingEdited}
-                                        onLayout={(event) => {
-                                            const { width } = event.nativeEvent.layout;
-                                            setDaysTableWidth(width);
-                                        }}
-                                        onWidthChange={(width) => {
-                                            setDaysTableWidth(width);
-                                        }}
-                                    />
-                                </Row>
-                            </Column>
-                        </Row>
+                        </ScrollView>
+                        {/* </Row> */}
 
-                    </ScrollView>
-                    {/* </Row> */}
+                    </ScrollShadow>
+                    <AppButton variant="black" className='w-40 h-8 ml-4 -mt-6' onPress={addUser}>
+                        <PoppinsText weight='bold' className='text-white text-xl'>+</PoppinsText>
+                        <PoppinsText weight='bold' className='text-white'>Add Player</PoppinsText>
+                    </AppButton>
+                </Column>
+            ) : (
+                <Row className='items-center justify-center'>
+                    <AppButton variant="black" className='w-40 h-8' onPress={addUser}>
+                        <PoppinsText weight='bold' className='text-white text-xl'>+</PoppinsText>
+                        <PoppinsText weight='bold' className='text-white'>Add Player</PoppinsText>
+                    </AppButton>
+                </Row>
+            )}
 
-                </ScrollShadow>
-                <AppButton variant="black" className='w-40 h-8 ml-4 -mt-6' onPress={addUser}>
-                    <PoppinsText weight='bold' className='text-white text-xl'>+</PoppinsText>
-                    <PoppinsText weight='bold' className='text-white'>Add Player</PoppinsText>
-                </AppButton>
 
-{/* testing function. */}
-                {/* <AppButton variant="green" className='w-40 h-8 ml-4 -mt-6' onPress={() => replaceDayDate(1, new Date())}>
-                    <PoppinsText weight='bold' className='text-white'>Set Day 1 to Today</PoppinsText>
-                </AppButton> */}
 
-                
-            </>
 
-            
 
         </Column>
     );

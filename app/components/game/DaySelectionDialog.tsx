@@ -23,10 +23,6 @@ const DaySelectionDialog = ({ isOpen, onOpenChange, index, dayDate, onPress, pre
     const [input, setInput] = useState('');
     const [isDateValid, setIsDateValid] = useState(false);
 
-    // Debug: log when isDateValid changes
-    useEffect(() => {
-        console.log('DaySelectionDialog: isDateValid changed to', isDateValid);
-    }, [isDateValid]);
 
     const formatDateWithConditionalYear = (date: Date): string => {
         const currentYear = new Date().getFullYear();
@@ -79,9 +75,7 @@ const DaySelectionDialog = ({ isOpen, onOpenChange, index, dayDate, onPress, pre
     } 
 
     const submitForum = () => {
-        console.log('DaySelectionDialog: submitForum called', { date, isDateValid });
         const parsedDate = normalizeDateInput(date);
-        console.log('DaySelectionDialog: parsed date', { parsedDate, isValid: !isNaN(parsedDate.getTime()) });
         if (!isNaN(parsedDate.getTime())) {
             replaceDayDate(index, parsedDate);
             onOpenChange(false);
@@ -126,14 +120,12 @@ const DaySelectionDialog = ({ isOpen, onOpenChange, index, dayDate, onPress, pre
 
                         {isDateValid ? (
                             <>
-                                {(() => { console.log('DaySelectionDialog: Rendering AppButton (valid)'); return null; })()}
                                 <AppButton className='w-34 h-10' variant='black' onPress={submitForum}>
                                     <PoppinsText color='white' weight='medium'>Change</PoppinsText>
                                 </AppButton>
                             </>
                         ) : (
                             <>
-                                {(() => { console.log('DaySelectionDialog: Rendering StatusButton (invalid)'); return null; })()}
                                 <StatusButton buttonText="Change" buttonAltText="Invalid Date" />
                             </>
                         )}
