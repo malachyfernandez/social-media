@@ -17,6 +17,7 @@ interface InlineEditableTextProps {
     placeholder?: string;
     onEditStart?: () => void;
     onEditEnd?: () => void;
+    compact?: boolean;
 }
 
 const InlineEditableText = ({
@@ -29,7 +30,8 @@ const InlineEditableText = ({
     style,
     placeholder = '',
     onEditStart,
-    onEditEnd
+    onEditEnd,
+    compact = false
 }: InlineEditableTextProps) => {
     const [isEditing, setIsEditing] = useState(false);
     const [editValue, setEditValue] = useState(value);
@@ -110,14 +112,22 @@ const InlineEditableText = ({
                 onKeyPress={handleKeyPress}
                 placeholder={placeholder}
                 multiline
-                className="border-2 border-blue-500 bg-white rounded-lg p-3 text-base focus:outline-none focus:border-blue-600"
+                className={`border-2 bg-white rounded-lg text-base focus:outline-none ${
+                    compact 
+                        ? 'border-blue-400 p-1' 
+                        : 'border-blue-500 p-3'
+                }`}
                 style={{
                     fontFamily: fontsLoaded ? getFontFamily() : undefined,
                     color: 'text',
-                    minWidth: 160,
-                    minHeight: 60,
+                    minWidth: compact ? 80 : 160,
+                    minHeight: compact ? 24 : 60,
+                    maxWidth: compact ? 120 : 1600,
+                    maxHeight: compact ? 60 : 600,
                     position: 'absolute',
                     zIndex: 1000,
+                    fontSize: '0.9rem',
+                    textAlignVertical: 'center',
                     ...style
                 }}
                 placeholderTextColor="#9CA3AF"

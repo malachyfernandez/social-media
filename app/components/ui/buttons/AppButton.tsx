@@ -4,7 +4,7 @@ import Row from '../../layout/Row';
 
 interface AppButtonProps {
     children: React.ReactNode;
-    variant?: 'outline' | 'black' | 'grey' | 'green';
+    variant?: 'outline' | 'outline-alt' | 'black' | 'grey' | 'green';
     className?: string;
     onPress?: () => void;
     dropShadow?: boolean;
@@ -27,6 +27,10 @@ const AppButton = ({
     if (variant === 'outline') {
         const bg = 'bg-none';
         extraStyles = `border-2 border-border ${bg} group hover:bg-border`;
+        
+    } else if (variant === 'outline-alt') {
+        const bg = 'bg-none';
+        extraStyles = `border-2 border-border ${bg} group hover:bg-border/10`;
         
     } else if (variant === 'grey') {
         const bg = 'bg-[#374559ae]';

@@ -12,6 +12,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { ScrollView, View } from 'react-native';
 import DaySelectionDialog from './DaySelectionDialog';
 import prettyLog from 'utils/prettyLog';
+import PoppinsNumberInput from '../ui/forms/PoppinsNumberInput';
+import PoppinsTextInput from '../ui/forms/PoppinsTextInput';
 
 
 
@@ -144,7 +146,8 @@ const PlayerPageOPERATOR = ({ currentUserId, gameId }: PlayerPageOPERATORProps) 
 
             {users.length > 0 ? (
                 <Column>
-                    <ScrollShadow LinearGradientComponent={LinearGradient} color="#fdfbf6" className='mr-1'>
+                    
+                    <ScrollShadow LinearGradientComponent={LinearGradient} color="#fdfbf6" className='mr-1 pt-1'>
                         {/* <Row > */}
                         <ScrollView horizontal={true} className='px-1 py-5'>
                             <Row>
@@ -223,6 +226,23 @@ const PlayerPageOPERATOR = ({ currentUserId, gameId }: PlayerPageOPERATORProps) 
                         <PoppinsText weight='bold' className='text-white text-xl'>+</PoppinsText>
                         <PoppinsText weight='bold' className='text-white'>Add Player</PoppinsText>
                     </AppButton>
+
+                    <Row className="items-center pt-8 mt-4 border-t border-subtle-border">
+                        <PoppinsText weight='medium'>Days per game day</PoppinsText>
+                        <PoppinsNumberInput
+                            value={numberOfRealDaysPerInGameDay.value}
+                            onChangeText={(displayValue, isValid, numericValue) => {
+                                if (isValid && numericValue !== null) {
+                                    setNumberOfRealDaysPerInGameDay(numericValue);
+                                }
+                            }}
+                            minValue={1}
+                            maxValue={30}
+                            inline={true}
+                            useDefaultStyling={true}
+                        />
+
+                    </Row>
                 </Column>
             ) : (
                 <Row className='items-center justify-center'>

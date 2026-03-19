@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { TextInput, TextInputProps, TextStyle, Text, View } from 'react-native';
 import { useFonts } from 'expo-font';
+import Row from 'app/components/layout/Row';
 
 type FontWeight = 'regular' | 'medium' | 'bold';
 
@@ -12,6 +13,8 @@ interface PoppinsNumberInputProps extends Omit<TextInputProps, 'value' | 'onChan
     onChangeText?: (displayValue: string, isValid: boolean, numericValue: number | null) => void;
     minValue?: number;
     maxValue?: number;
+    inline?: boolean;
+    useDefaultStyling?: boolean;
 }
 
 const sanitizeInput = (value?: string | number) => {
@@ -27,6 +30,8 @@ const PoppinsNumberInput = ({
     onChangeText,
     minValue,
     maxValue,
+    inline,
+    useDefaultStyling = false,
     ...props
 }: PoppinsNumberInputProps) => {
     const [fontsLoaded] = useFonts({
@@ -101,23 +106,63 @@ const PoppinsNumberInput = ({
         }
     };
 
+    const allGoodText = useMemo(() => {
+         if (minValue !== undefined || maxValue !== undefined) {
+            if (minValue !== undefined && maxValue !== undefined) {
+                return `${minValue}-${maxValue} ✓`;
+            }
+            if (minValue !== undefined) {
+                return `Minimum ${minValue} ✓`;
+            }
+            if (maxValue !== undefined) {
+                return `Maximum ${maxValue} ✓`;
+            }
+        }
+        return '';
+    }, [showError, numericValue, minValue, maxValue, inputValue.length]);
+
     return (
-        <View className="w-full">
-            <TextInput
-                className={`${className} focus:outline-none rounded ${showError ? 'border-red-500' : ''}`}
-                style={{ fontFamily: fontsLoaded ? getFontFamily() : undefined, color: 'text', ...style }}
-                placeholderTextColor="#9CA3AF"
-                keyboardType="numeric"
-                value={inputValue}
-                onChangeText={handleChangeText}
-                {...props}
-            />
-            {helperText.length > 0 && (
-                <Text className={`text-sm mt-1 ${showError ? 'text-red-500' : 'text-gray-600'}`} style={{ fontFamily: fontsLoaded ? 'Poppins-Regular' : undefined }}>
-                    {helperText}
-                </Text>
-            )}
-        </View>
+        <>
+            {
+                inline ? (
+                    <View className="w-20" >
+                        <TextInput
+                            className={`${className} ${useDefaultStyling ? 'h-10 pl-4 border border-subtle-border' : ''} focus:outline-none rounded ${showError ? 'border-red-500' : ''}`}
+                            style={{ fontFamily: fontsLoaded ? getFontFamily() : undefined, color: 'text', ...style }}
+                            placeholderTextColor="#9CA3AF"
+                            keyboardType="numeric"
+                            value={inputValue}
+                            onChangeText={handleChangeText}
+                            {...props}
+                        />
+                        <Row className='h-10 overflow-visible absolute -bottom-10'>
+                        {helperText.length > 0 && (
+                            <Text className={`text-sm text-nowrap mt-1 ${showError ? 'text-red-500' : 'text-gray-600'}`} style={{ fontFamily: fontsLoaded ? 'Poppins-Regular' : undefined }}>
+                                {helperText}
+                            </Text>
+                        )
+                        }
+                        </Row>
+                    </View >
+                ) : (
+                    <View className="w-full">
+                        <TextInput
+                            className={`${className} ${useDefaultStyling ? 'h-10 pl-4 border border-subtle-border' : ''} focus:outline-none rounded ${showError ? 'border-red-500' : ''}`}
+                            style={{ fontFamily: fontsLoaded ? getFontFamily() : undefined, color: 'text', ...style }}
+                            placeholderTextColor="#9CA3AF"
+                            keyboardType="numeric"
+                            value={inputValue}
+                            onChangeText={handleChangeText}
+                            {...props}
+                        />
+                        {helperText.length > 0 && (
+                            <Text className={`text-sm mt-1 ${showError ? 'text-red-500' : 'text-gray-600'}`} style={{ fontFamily: fontsLoaded ? 'Poppins-Regular' : undefined }}>
+                                {helperText}
+                            </Text>
+                        )}
+                    </View>
+                )}
+        </>
     );
 };
 

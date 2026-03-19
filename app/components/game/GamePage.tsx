@@ -10,6 +10,7 @@ import UserIcon from '../ui/icons/UserIcon';
 import NavTab from '../layout/NavTab';
 import { transform } from '@babel/core';
 import PlayerPageOPERATOR from './PlayerPageOPERATOR';
+import ConfigPageOPERATOR from './ConfigPageOPERATOR';
 import AppButton from '../ui/buttons/AppButton';
 
 interface GamePageProps {
@@ -107,6 +108,11 @@ const GamePage = ({ gameId, currentUserId }: GamePageProps) => {
                     {/* if players */}
                     {navBar === "players" && (
                         <PlayerPageOPERATOR currentUserId={currentUserId} gameId={gameId} />
+                    )}
+                    
+                    {/* if config */}
+                    {navBar === "config" && (
+                        <ConfigPageOPERATOR currentUserId={currentUserId} gameId={gameId} />
                     )}
                 </Column>
             </ScrollView>
