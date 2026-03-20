@@ -6,9 +6,10 @@ import PoppinsText from './text/PoppinsText';
 interface StatusButtonProps {
   buttonText: string;
   buttonAltText: string;
+  className?: string;
 }
 
-export default function StatusButton({ buttonText, buttonAltText }: StatusButtonProps) {
+export default function StatusButton({ buttonText, buttonAltText, className }: StatusButtonProps) {
 
   const [trueButtonText, setTrueButtonText] = useState(buttonText);
   const [shakeOffset, setShakeOffset] = useState(0);
@@ -44,8 +45,8 @@ export default function StatusButton({ buttonText, buttonAltText }: StatusButton
   }, [trueButtonText, buttonAltText]);
 
   return (
-    <View className="transition-all" style={{ transform: [{ translateX: shakeOffset }] }}>
-      <AppButton variant="grey" className="h-10 w-28" onPress={buttonPress}>
+    <View className={`transition-all`} style={{ transform: [{ translateX: shakeOffset }] }}>
+      <AppButton variant="grey" className={`h-10 w-28 ${className || ''}`} onPress={buttonPress}>
         <PoppinsText weight='medium' color='white'>{trueButtonText}</PoppinsText>
       </AppButton>
     </View>

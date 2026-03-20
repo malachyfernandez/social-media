@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import ConvexDialog from '../ui/dialog/ConvexDialog';
 import Column from '../layout/Column';
 import AppButton from '../ui/buttons/AppButton';
@@ -12,6 +12,7 @@ import { RoleTableItem } from 'types/roleTable';
 import { UserTableItem } from 'types/playerTable';
 import { useCreateUndoSnapshot, useUndoRedo } from 'hooks/useUndoRedo';
 import Row from '../layout/Row';
+import StatusButton from '../ui/StatusButton';
 
 interface UserEditDialogProps {
     isOpen: boolean;
@@ -65,9 +66,20 @@ const UserEditDialog = ({
         onOpenChange(open);
     };
 
+    const [isUniqueEmail, setIsUniqueEmail] = useState(false);
+
+    let emailExists;
+
+    useEffect(() => {
+        emailExists = users.some((user, index) => 
+            user.email === email.trim() && index !== userIndex
+        );
+        setIsUniqueEmail(!emailExists);
+    }, [email, userIndex, users]);
+
     const handleSubmit = () => {
         // Check for email uniqueness (skip if it's the same user's current email)
-        const emailExists = users.some((user, index) => 
+        emailExists = users.some((user, index) => 
             user.email === email.trim() && index !== userIndex
         );
         
@@ -171,9 +183,15 @@ const UserEditDialog = ({
                         <Column className='w-full items-center justify-center'>
                             <Column>
                                 <Row>
+                                {isUniqueEmail ? (
                                     <AppButton className='w-48 h-10' variant='black' onPress={handleSubmit}>
                                         <PoppinsText color='white' weight='medium'>Save</PoppinsText>
-                                    </AppButton>
+                                    </AppButton> 
+                                ) : (
+                                    <StatusButton className='w-48 h-10' buttonText='Save' buttonAltText='Repeated' />
+                                    // <PoppinsText weight='medium'>Email already exists!</PoppinsText>
+                                )}
+                                    
                                     <AppButton className='w-48 h-10' variant='outline-alt' onPress={handleCancel}>
                                         <PoppinsText color='black' weight='medium'>Cancel</PoppinsText>
                                     </AppButton>
