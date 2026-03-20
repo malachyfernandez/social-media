@@ -170,7 +170,7 @@ const PlayerPageOPERATOR = ({ currentUserId, gameId }: PlayerPageOPERATORProps) 
 
         <Column>
             {/* Demo HeroUI Popover Role Picker */}
-            <Column className='p-4 border-b border-subtle-border'>
+            {/* <Column className='p-4 border-b border-subtle-border'>
                 <PoppinsText weight='medium' className='mb-2'>Demo: Role Picker</PoppinsText>
                 <AppDropdown
                     options={demoRoleOptions}
@@ -179,7 +179,7 @@ const PlayerPageOPERATOR = ({ currentUserId, gameId }: PlayerPageOPERATORProps) 
                     placeholder='Select a role'
                     emptyText='No roles available'
                 />
-            </Column>
+            </Column> */}
 
             {users.length > 0 ? (
                 <Column>

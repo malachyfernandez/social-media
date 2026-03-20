@@ -80,10 +80,6 @@ const UserEditDialog = ({
         onOpenChange(false);
     };
 
-    const deleteUser = (userIndex: number) => {
-        const filteredUserTable = userTable?.value?.filter((userRow, index) => index != userIndex);
-        setUserTable(filteredUserTable ?? []);
-    };
 
     const { executeCommand } = useUndoRedo();
     const createUndoSnapshot = useCreateUndoSnapshot();
