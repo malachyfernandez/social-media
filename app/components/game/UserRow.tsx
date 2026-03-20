@@ -9,7 +9,7 @@ import { Pressable } from 'react-native';
 import UserEditDialog from './UserEditDialog';
 import { useUserList } from 'hooks/useUserList';
 import { UserTableItem } from 'types/playerTable';
-import { useUndoRedo } from 'hooks/useUndoRedo';
+import { createUndoSnapshot, useUndoRedo } from 'hooks/useUndoRedo';
 
 interface UserRowProps {
     user: {
@@ -77,7 +77,7 @@ const UserRow = ({ user, index, isLast, setLivingState, setExtraColumnValue, use
     useEffect(() => {
         if (!iExist) {
 
-            console.log('UserRow: Setting iExist to true, starting timer');
+            // console.log('UserRow: Setting iExist to true, starting timer');
 
             setIExist(true);
             setIsWaitingForNewPlayerRow(true);
@@ -114,14 +114,18 @@ const UserRow = ({ user, index, isLast, setLivingState, setExtraColumnValue, use
 
     const deleteUser = (userIndex: number) => {
         const filteredUserTable = userTable?.value?.filter((userRow, index) => index != userIndex);
-    }
+        setUserTable(filteredUserTable ?? []);
+    };
 
     const { executeCommand } = useUndoRedo();
 
     const UNDOABLEdeleteUser = (userIndex: number) => {
+        const previousUserTable = createUndoSnapshot(userTable?.value ?? []);
+        const nextUserTable = previousUserTable.filter((_, index) => index !== userIndex);
+
         executeCommand({
-            action: () => deleteUser(userIndex),
-            undoAction: () => setUserTable(userTable?.value),
+            action: () => setUserTable(createUndoSnapshot(nextUserTable)),
+            undoAction: () => setUserTable(createUndoSnapshot(previousUserTable)),
             description: "Deleted user"
         });
     };

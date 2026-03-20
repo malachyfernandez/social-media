@@ -6,7 +6,7 @@ import AppButton from '../ui/buttons/AppButton';
 import Row from '../layout/Row';
 import UserRow from './UserRow';
 import TitleRow from './TitleRow';
-import { useUndoRedo } from 'hooks/useUndoRedo';
+import { createUndoSnapshot, useUndoRedo } from 'hooks/useUndoRedo';
 import { PlayerData, DayData, UserTableItem, UserTableTitle, UserTableColumnVisibility } from 'types/playerTable';
 
 interface PlayerTableProps {
@@ -145,11 +145,21 @@ const PlayerTable = ({ gameId, doSync, setDoSync, isBeingEdited, setIsBeingEdite
     };
 
     const UNDOABLEsetLivingState = (userIndex: number, newLivingState: 'alive' | 'dead') => {
-        const oldLivingState = users[userIndex]?.playerData.livingState;
+        const previousUserTable = createUndoSnapshot(userTable?.value ?? []);
+        if (userIndex < 0 || userIndex >= previousUserTable.length) return;
+
+        const nextUserTable = createUndoSnapshot(previousUserTable);
+        nextUserTable[userIndex] = {
+            ...nextUserTable[userIndex],
+            playerData: {
+                ...nextUserTable[userIndex].playerData,
+                livingState: newLivingState
+            }
+        };
 
         executeCommand({
-            action: () => setLivingState(userIndex, newLivingState),
-            undoAction: () => setLivingState(userIndex, oldLivingState),
+            action: () => setUserTable(createUndoSnapshot(nextUserTable)),
+            undoAction: () => setUserTable(createUndoSnapshot(previousUserTable)),
             description: "Change Living State"
         });
     };
@@ -173,11 +183,25 @@ const PlayerTable = ({ gameId, doSync, setDoSync, isBeingEdited, setIsBeingEdite
     };
 
     const UNDOABLEsetExtraColumnValue = (userIndex: number, extraColumnIndex: number, newExtraColumnValue: string) => {
-        const oldValue = users[userIndex]?.playerData.extraColumns?.[extraColumnIndex] || "";
+        const previousUserTable = createUndoSnapshot(userTable?.value ?? []);
+        if (userIndex < 0 || userIndex >= previousUserTable.length) return;
+
+        const nextUserTable = createUndoSnapshot(previousUserTable);
+        const currentExtraColumns = nextUserTable[userIndex].playerData.extraColumns || [];
+        const updatedExtraColumns = [...currentExtraColumns];
+        updatedExtraColumns[extraColumnIndex] = newExtraColumnValue;
+
+        nextUserTable[userIndex] = {
+            ...nextUserTable[userIndex],
+            playerData: {
+                ...nextUserTable[userIndex].playerData,
+                extraColumns: updatedExtraColumns
+            }
+        };
 
         executeCommand({
-            action: () => setExtraColumnValue(userIndex, extraColumnIndex, newExtraColumnValue),
-            undoAction: () => setExtraColumnValue(userIndex, extraColumnIndex, oldValue),
+            action: () => setUserTable(createUndoSnapshot(nextUserTable)),
+            undoAction: () => setUserTable(createUndoSnapshot(previousUserTable)),
             description: "Set Column Value"
         });
     };
@@ -195,12 +219,13 @@ const PlayerTable = ({ gameId, doSync, setDoSync, isBeingEdited, setIsBeingEdite
     };
 
     const UNDOABLEsetColumnTitle = (columnIndex: number, newTitle: string) => {
-        const currentTitles = userTableTitle?.value ?? { extraUserColumns: [], extraDayColumns: [] };
-        const oldTitle = currentTitles.extraUserColumns[columnIndex] || "";
+        const previousTitles = createUndoSnapshot(userTableTitle?.value ?? { extraUserColumns: [], extraDayColumns: [] });
+        const nextTitles = createUndoSnapshot(previousTitles);
+        nextTitles.extraUserColumns[columnIndex] = newTitle;
 
         executeCommand({
-            action: () => setColumnTitle(columnIndex, newTitle),
-            undoAction: () => setColumnTitle(columnIndex, oldTitle),
+            action: () => setUserTableTitle(createUndoSnapshot(nextTitles)),
+            undoAction: () => setUserTableTitle(createUndoSnapshot(previousTitles)),
             description: "Set Column Title"
         });
     };
@@ -246,11 +271,48 @@ const PlayerTable = ({ gameId, doSync, setDoSync, isBeingEdited, setIsBeingEdite
     };
 
     const UNDOABLEaddColumn = () => {
+        const previousTitles = createUndoSnapshot(userTableTitle?.value ?? { extraUserColumns: [], extraDayColumns: [] });
+        const previousUserTable = createUndoSnapshot(userTable?.value ?? []);
+        const previousVisibility = createUndoSnapshot(userTableColumnVisibility?.value ?? { extraUserColumns: [], extraDayColumns: [] });
+
+        const newTitle = `Column ${previousTitles.extraUserColumns.length + 1}`;
+        const nextTitles = {
+            ...previousTitles,
+            extraUserColumns: [
+                ...previousTitles.extraUserColumns,
+                newTitle
+            ]
+        };
+
+        const nextUserTable = previousUserTable.map((user) => ({
+            ...user,
+            playerData: {
+                ...user.playerData,
+                extraColumns: [
+                    ...(user.playerData.extraColumns || []),
+                    ""
+                ]
+            }
+        }));
+
+        const nextVisibility = {
+            ...previousVisibility,
+            extraUserColumns: [
+                ...previousVisibility.extraUserColumns,
+                true
+            ]
+        };
+
         executeCommand({
-            action: () => addColumn(),
+            action: () => {
+                setUserTableTitle(createUndoSnapshot(nextTitles));
+                setUserTable(createUndoSnapshot(nextUserTable));
+                setUserTableColumnVisibility(createUndoSnapshot(nextVisibility));
+            },
             undoAction: () => {
-                const currentTitles = userTableTitle?.value ?? { extraUserColumns: [], extraDayColumns: [] };
-                setColumnVisibility(currentTitles.extraUserColumns.length, false);
+                setUserTableTitle(createUndoSnapshot(previousTitles));
+                setUserTable(createUndoSnapshot(previousUserTable));
+                setUserTableColumnVisibility(createUndoSnapshot(previousVisibility));
             },
             description: "Add Column"
         });
@@ -269,12 +331,17 @@ const PlayerTable = ({ gameId, doSync, setDoSync, isBeingEdited, setIsBeingEdite
     };
 
     const UNDOABLEsetColumnVisibility = (columnIndex: number, visibility: boolean) => {
-        const currentVisibility = userTableColumnVisibility?.value ?? { extraUserColumns: [], extraDayColumns: [] };
-        const oldVisibility = currentVisibility.extraUserColumns[columnIndex] ?? true;
+        const previousVisibility = createUndoSnapshot(userTableColumnVisibility?.value ?? { extraUserColumns: [], extraDayColumns: [] });
+        const nextVisibility = {
+            ...previousVisibility,
+            extraUserColumns: previousVisibility.extraUserColumns.map((v, index) =>
+                index === columnIndex ? visibility : v
+            )
+        };
 
         executeCommand({
-            action: () => setColumnVisibility(columnIndex, visibility),
-            undoAction: () => setColumnVisibility(columnIndex, oldVisibility),
+            action: () => setUserTableColumnVisibility(createUndoSnapshot(nextVisibility)),
+            undoAction: () => setUserTableColumnVisibility(createUndoSnapshot(previousVisibility)),
             description: visibility ? "Show Column" : "Hide Column"
         });
     };

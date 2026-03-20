@@ -6,7 +6,7 @@ import AppButton from '../ui/buttons/AppButton';
 import Row from '../layout/Row';
 import DayUserRow from './DayUserRow';
 import DayTitleRow from './DayTitleRow';
-import { useUndoRedo } from 'hooks/useUndoRedo';
+import { createUndoSnapshot, useUndoRedo } from 'hooks/useUndoRedo';
 import { UserTableItem, UserTableTitle, UserTableColumnVisibility } from 'types/playerTable';
 
 interface DaysTableProps {
@@ -97,11 +97,30 @@ const DaysTable = ({ gameId, dayNumber, isBeingEdited, setIsBeingEdited, classNa
     };
 
     const UNDOABLEsetVoteValue = (userIndex: number, newVoteValue: string) => {
-        const oldValue = users[userIndex]?.days[dayNumber]?.vote || "";
+        const previousUserTable = createUndoSnapshot(userTable?.value ?? []);
+        if (userIndex < 0 || userIndex >= previousUserTable.length) return;
+
+        const nextUserTable = createUndoSnapshot(previousUserTable);
+        const user = nextUserTable[userIndex];
+        const days = [...user.days];
+
+        while (days.length <= dayNumber) {
+            days.push({ vote: "", action: "", extraColumns: [] });
+        }
+
+        days[dayNumber] = {
+            ...days[dayNumber],
+            vote: newVoteValue
+        };
+
+        nextUserTable[userIndex] = {
+            ...user,
+            days
+        };
 
         executeCommand({
-            action: () => setVoteValue(userIndex, newVoteValue),
-            undoAction: () => setVoteValue(userIndex, oldValue),
+            action: () => setUserTable(createUndoSnapshot(nextUserTable)),
+            undoAction: () => setUserTable(createUndoSnapshot(previousUserTable)),
             description: "Set Vote"
         });
     };
@@ -131,11 +150,30 @@ const DaysTable = ({ gameId, dayNumber, isBeingEdited, setIsBeingEdited, classNa
     };
 
     const UNDOABLEsetActionValue = (userIndex: number, newActionValue: string) => {
-        const oldValue = users[userIndex]?.days[dayNumber]?.action || "";
+        const previousUserTable = createUndoSnapshot(userTable?.value ?? []);
+        if (userIndex < 0 || userIndex >= previousUserTable.length) return;
+
+        const nextUserTable = createUndoSnapshot(previousUserTable);
+        const user = nextUserTable[userIndex];
+        const days = [...user.days];
+
+        while (days.length <= dayNumber) {
+            days.push({ vote: "", action: "", extraColumns: [] });
+        }
+
+        days[dayNumber] = {
+            ...days[dayNumber],
+            action: newActionValue
+        };
+
+        nextUserTable[userIndex] = {
+            ...user,
+            days
+        };
 
         executeCommand({
-            action: () => setActionValue(userIndex, newActionValue),
-            undoAction: () => setActionValue(userIndex, oldValue),
+            action: () => setUserTable(createUndoSnapshot(nextUserTable)),
+            undoAction: () => setUserTable(createUndoSnapshot(previousUserTable)),
             description: "Set Action"
         });
     };
@@ -170,11 +208,34 @@ const DaysTable = ({ gameId, dayNumber, isBeingEdited, setIsBeingEdited, classNa
     };
 
     const UNDOABLEsetExtraDayColumnValue = (userIndex: number, extraColumnIndex: number, newExtraColumnValue: string) => {
-        const oldValue = users[userIndex]?.days[dayNumber]?.extraColumns?.[extraColumnIndex] || "";
+        const previousUserTable = createUndoSnapshot(userTable?.value ?? []);
+        if (userIndex < 0 || userIndex >= previousUserTable.length) return;
+
+        const nextUserTable = createUndoSnapshot(previousUserTable);
+        const user = nextUserTable[userIndex];
+        const days = [...user.days];
+
+        while (days.length <= dayNumber) {
+            days.push({ vote: "", action: "", extraColumns: [] });
+        }
+
+        const day = days[dayNumber];
+        const updatedExtraColumns = [...(day.extraColumns || [])];
+        updatedExtraColumns[extraColumnIndex] = newExtraColumnValue;
+
+        days[dayNumber] = {
+            ...day,
+            extraColumns: updatedExtraColumns
+        };
+
+        nextUserTable[userIndex] = {
+            ...user,
+            days
+        };
 
         executeCommand({
-            action: () => setExtraDayColumnValue(userIndex, extraColumnIndex, newExtraColumnValue),
-            undoAction: () => setExtraDayColumnValue(userIndex, extraColumnIndex, oldValue),
+            action: () => setUserTable(createUndoSnapshot(nextUserTable)),
+            undoAction: () => setUserTable(createUndoSnapshot(previousUserTable)),
             description: "Set Day Column Value"
         });
     };
@@ -192,12 +253,13 @@ const DaysTable = ({ gameId, dayNumber, isBeingEdited, setIsBeingEdited, classNa
     };
 
     const UNDOABLEsetDayColumnTitle = (columnIndex: number, newTitle: string) => {
-        const currentTitles = userTableTitle?.value ?? { extraUserColumns: [], extraDayColumns: [] };
-        const oldTitle = currentTitles.extraDayColumns[columnIndex] || "";
+        const previousTitles = createUndoSnapshot(userTableTitle?.value ?? { extraUserColumns: [], extraDayColumns: [] });
+        const nextTitles = createUndoSnapshot(previousTitles);
+        nextTitles.extraDayColumns[columnIndex] = newTitle;
 
         executeCommand({
-            action: () => setDayColumnTitle(columnIndex, newTitle),
-            undoAction: () => setDayColumnTitle(columnIndex, oldTitle),
+            action: () => setUserTableTitle(createUndoSnapshot(nextTitles)),
+            undoAction: () => setUserTableTitle(createUndoSnapshot(previousTitles)),
             description: "Set Day Column Title"
         });
     };
@@ -255,11 +317,59 @@ const DaysTable = ({ gameId, dayNumber, isBeingEdited, setIsBeingEdited, classNa
     };
 
     const UNDOABLEaddDayColumn = () => {
+        const previousTitles = createUndoSnapshot(userTableTitle?.value ?? { extraUserColumns: [], extraDayColumns: [] });
+        const previousUserTable = createUndoSnapshot(userTable?.value ?? []);
+        const previousVisibility = createUndoSnapshot(userTableColumnVisibility?.value ?? { extraUserColumns: [], extraDayColumns: [] });
+
+        const newTitle = `Column ${previousTitles.extraDayColumns.length + 1}`;
+        const nextTitles = {
+            ...previousTitles,
+            extraDayColumns: [
+                ...previousTitles.extraDayColumns,
+                newTitle
+            ]
+        };
+
+        const nextUserTable = previousUserTable.map((user) => {
+            const days = [...user.days];
+
+            while (days.length <= dayNumber) {
+                days.push({ vote: "", action: "", extraColumns: [] });
+            }
+
+            const day = days[dayNumber];
+            days[dayNumber] = {
+                ...day,
+                extraColumns: [
+                    ...(day.extraColumns || []),
+                    ""
+                ]
+            };
+
+            return {
+                ...user,
+                days
+            };
+        });
+
+        const nextVisibility = {
+            ...previousVisibility,
+            extraDayColumns: [
+                ...previousVisibility.extraDayColumns,
+                true
+            ]
+        };
+
         executeCommand({
-            action: () => addDayColumn(),
+            action: () => {
+                setUserTableTitle(createUndoSnapshot(nextTitles));
+                setUserTable(createUndoSnapshot(nextUserTable));
+                setUserTableColumnVisibility(createUndoSnapshot(nextVisibility));
+            },
             undoAction: () => {
-                const currentTitles = userTableTitle?.value ?? { extraUserColumns: [], extraDayColumns: [] };
-                setDayColumnVisibility(currentTitles.extraDayColumns.length, false);
+                setUserTableTitle(createUndoSnapshot(previousTitles));
+                setUserTable(createUndoSnapshot(previousUserTable));
+                setUserTableColumnVisibility(createUndoSnapshot(previousVisibility));
             },
             description: "Add Day Column"
         });
@@ -278,12 +388,17 @@ const DaysTable = ({ gameId, dayNumber, isBeingEdited, setIsBeingEdited, classNa
     };
 
     const UNDOABLEsetDayColumnVisibility = (columnIndex: number, visibility: boolean) => {
-        const currentVisibility = userTableColumnVisibility?.value ?? { extraUserColumns: [], extraDayColumns: [] };
-        const oldVisibility = currentVisibility.extraDayColumns[columnIndex] ?? true;
+        const previousVisibility = createUndoSnapshot(userTableColumnVisibility?.value ?? { extraUserColumns: [], extraDayColumns: [] });
+        const nextVisibility = {
+            ...previousVisibility,
+            extraDayColumns: previousVisibility.extraDayColumns.map((v, index) =>
+                index === columnIndex ? visibility : v
+            )
+        };
 
         executeCommand({
-            action: () => setDayColumnVisibility(columnIndex, visibility),
-            undoAction: () => setDayColumnVisibility(columnIndex, oldVisibility),
+            action: () => setUserTableColumnVisibility(createUndoSnapshot(nextVisibility)),
+            undoAction: () => setUserTableColumnVisibility(createUndoSnapshot(previousVisibility)),
             description: visibility ? "Show Day Column" : "Hide Day Column"
         });
     };
