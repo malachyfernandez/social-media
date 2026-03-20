@@ -18,6 +18,7 @@ interface InlineEditableTextProps {
     onEditStart?: () => void;
     onEditEnd?: () => void;
     compact?: boolean;
+    autoSelect?: boolean;
 }
 
 const InlineEditableText = ({
@@ -31,7 +32,8 @@ const InlineEditableText = ({
     placeholder = '',
     onEditStart,
     onEditEnd,
-    compact = false
+    compact = false,
+    autoSelect = true
 }: InlineEditableTextProps) => {
     const [isEditing, setIsEditing] = useState(false);
     const [editValue, setEditValue] = useState(value);

@@ -10,7 +10,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { PortalHost } from "@rn-primitives/portal";
 import { tokenCache } from '../utils/tokenCache';
 import { ToastProvider } from '../contexts/ToastContext';
-import "../uniwind-types.d.ts";
+import { WebDropdownProvider } from '../contexts/WebDropdownProvider';
 import "../global.css";
 
 const convex = new ConvexReactClient(process.env.EXPO_PUBLIC_CONVEX_URL!);
@@ -29,10 +29,12 @@ export default function RootLayout() {
         >
           <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
             <ClerkLoaded>
-              <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
-                <Slot />
-                <PortalHost />
-              </ConvexProviderWithClerk>
+              <WebDropdownProvider>
+                <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
+                  <Slot />
+                  <PortalHost />
+                </ConvexProviderWithClerk>
+              </WebDropdownProvider>
             </ClerkLoaded>
           </ClerkProvider>
         </HeroUINativeProvider>

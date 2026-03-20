@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PoppinsText from '../ui/text/PoppinsText';
 import InlineEditableText from '../ui/forms/InlineEditableText';
 import Column from '../layout/Column';
@@ -7,6 +7,9 @@ import CustomCheckbox from '../ui/CustomCheckbox';
 import Animated, { FadeInLeft, FadeInRight, FadeOutDown, FadeOutLeft, FadeOutRight, Easing, FadeInDown, FadeOutUp } from 'react-native-reanimated';
 import { Pressable } from 'react-native';
 import UserEditDialog from './UserEditDialog';
+import { useUserList } from 'hooks/useUserList';
+import { UserTableItem } from 'types/playerTable';
+import { useUndoRedo } from 'hooks/useUndoRedo';
 
 interface UserRowProps {
     user: {
@@ -36,10 +39,12 @@ interface UserRowProps {
     onEditEnd?: () => void;
     isEditing?: boolean;
     gameId: string;
+    isNewPlayerRowJustCreated: boolean;
+    setIsNewPlayerRowJustCreated: (value: boolean) => void;
 }
 
 
-const UserRow = ({ user, index, isLast, setLivingState, setExtraColumnValue, userTableColumnVisibility, onEditStart, onEditEnd, isEditing, gameId }: UserRowProps) => {
+const UserRow = ({ user, index, isLast, setLivingState, setExtraColumnValue, userTableColumnVisibility, onEditStart, onEditEnd, isEditing, gameId, isNewPlayerRowJustCreated, setIsNewPlayerRowJustCreated }: UserRowProps) => {
     const [editingColumns, setEditingColumns] = useState<Record<number, boolean>>({});
     const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -60,6 +65,68 @@ const UserRow = ({ user, index, isLast, setLivingState, setExtraColumnValue, use
         onEditEnd?.();
     };
 
+
+    const [iExist, setIExist] = useState(true);
+    const [isWaitingForNewPlayerRow, setIsWaitingForNewPlayerRow] = useState(false);
+
+    useEffect(() => {
+        setIExist(false);
+    }, []);
+
+
+    useEffect(() => {
+        if (!iExist) {
+
+            console.log('UserRow: Setting iExist to true, starting timer');
+
+            setIExist(true);
+            setIsWaitingForNewPlayerRow(true);
+
+            const timeoutId = setTimeout(() => {
+                setIsWaitingForNewPlayerRow(false);
+            }, 100);
+
+            return () => {
+                setIsWaitingForNewPlayerRow(false);
+                clearTimeout(timeoutId);
+            };
+        }
+    }, [iExist]);
+
+
+    useEffect(() => {
+        if (isWaitingForNewPlayerRow && isNewPlayerRowJustCreated) {
+            setIsDialogOpen(true);
+            setIsNewPlayerRowJustCreated(false);
+            setIsWaitingForNewPlayerRow(false);
+
+        }
+    }, [isNewPlayerRowJustCreated, isWaitingForNewPlayerRow]);
+
+
+    const [userTable, setUserTable] = useUserList<UserTableItem[]>({
+        key: "userTable",
+        itemId: gameId,
+        privacy: "PUBLIC",
+    });
+    // User Row.tsx
+
+
+    const deleteUser = (userIndex: number) => {
+        const filteredUserTable = userTable?.value?.filter((userRow, index) => index != userIndex);
+    }
+
+    const { executeCommand } = useUndoRedo();
+
+    const UNDOABLEdeleteUser = (userIndex: number) => {
+        executeCommand({
+            action: () => deleteUser(userIndex),
+            undoAction: () => setUserTable(userTable?.value),
+            description: "Change Living State"
+        });
+    };
+
+
     return (
         <>
             <Row gap={0} className={` h-12 w-min ${isEditing ? 'z-50' : ''}`}>
@@ -68,8 +135,8 @@ const UserRow = ({ user, index, isLast, setLivingState, setExtraColumnValue, use
                 </Column>
                 <Column gap={0} className='w-28 h-full border border-subtle-border items-center justify-center'>
                     <Pressable onPress={() => setIsDialogOpen(true)} className='w-28 h-full items-center justify-center'>
-                        <PoppinsText 
-                            weight='medium' 
+                        <PoppinsText
+                            weight='medium'
                             className='text-center text-nowrap overflow-hidden w-28'
                             style={{
                                 textDecorationLine: 'underline',
@@ -80,7 +147,7 @@ const UserRow = ({ user, index, isLast, setLivingState, setExtraColumnValue, use
                                 <PoppinsText className="opacity-50">No Name</PoppinsText>
                             )}
                         </PoppinsText>
-                        <PoppinsText 
+                        <PoppinsText
                             varient='subtext'
                             className='text-center text-nowrap overflow-hidden w-28'
                             style={{
@@ -137,6 +204,7 @@ const UserRow = ({ user, index, isLast, setLivingState, setExtraColumnValue, use
                 currentRole={user.role}
                 onPress={() => setIsDialogOpen(true)}
                 gameId={gameId}
+                onDelete={() => deleteUser(index)}
             />
         </>
     );

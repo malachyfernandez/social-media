@@ -4,20 +4,12 @@ import Column from '../layout/Column';
 import AppButton from '../ui/buttons/AppButton';
 import PoppinsText from '../ui/text/PoppinsText';
 import PoppinsTextInput from '../ui/forms/PoppinsTextInput';
+import AppDropdown from '../ui/forms/AppDropdown';
 import DialogHeader from '../ui/dialog/DialogHeader';
-import { View } from 'react-native';
+import { View, Text } from 'react-native';
 import { useUserList } from 'hooks/useUserList';
 import { RoleTableItem } from 'types/roleTable';
 import { UserTableItem } from 'types/playerTable';
-import {
-    Select,
-    SelectContent,
-    SelectGroup,
-    SelectItem,
-    SelectLabel,
-    SelectTrigger,
-    SelectValue,
-} from '../ui/select';
 
 interface UserEditDialogProps {
     isOpen: boolean;
@@ -28,6 +20,7 @@ interface UserEditDialogProps {
     currentRole: string;
     onPress: () => void;
     gameId: string;
+    onDelete: () => void;
 }
 
 const UserEditDialog = ({
@@ -37,8 +30,8 @@ const UserEditDialog = ({
     currentRealName,
     currentEmail,
     currentRole,
-    onPress,
-    gameId
+    gameId,
+    onDelete
 }: UserEditDialogProps) => {
     const [realName, setRealName] = useState(currentRealName || '');
     const [email, setEmail] = useState(currentEmail || '');
@@ -53,7 +46,7 @@ const UserEditDialog = ({
 
     const users = userTable?.value ?? [];
 
-    const [roleTable, setRoleTable] = useUserList<RoleTableItem[]>({
+    const [roleTable] = useUserList<RoleTableItem[]>({
         key: "roleTable",
         itemId: gameId,
         privacy: "PUBLIC",
@@ -66,10 +59,8 @@ const UserEditDialog = ({
             label: roleItem.role,
         }));
 
-    const selectedRoleOption = role ? { value: role, label: role } : undefined;
-
-    const handleRoleChange = (option?: { value: string; label: string }) => {
-        setRole(option?.value ?? '');
+    const handleDialogOpenChange = (open: boolean) => {
+        onOpenChange(open);
     };
 
     const handleSubmit = () => {
@@ -84,7 +75,7 @@ const UserEditDialog = ({
             };
             setUserTable(updatedUsers);
         }
-        
+
         onOpenChange(false);
     };
 
@@ -95,10 +86,16 @@ const UserEditDialog = ({
         onOpenChange(false);
     };
 
-    // HERE
+    const handleDeleteUser = () => {
+        // Remove user from the users array
+        const updatedUsers = users.filter((_, index) => index !== userIndex);
+        setUserTable(updatedUsers);
+        onDelete();
+        onOpenChange(false);
+    };
 
     return (
-        <ConvexDialog.Root isOpen={isOpen} onOpenChange={onOpenChange}>
+        <ConvexDialog.Root isOpen={isOpen} onOpenChange={handleDialogOpenChange}>
             <ConvexDialog.Trigger asChild>
                 <View>
                     {/* This will be replaced by the actual pressable in UserRow */}
@@ -133,40 +130,14 @@ const UserEditDialog = ({
                             />
 
                             <PoppinsText weight='medium'>Role</PoppinsText>
-                            <Select
-                                value={selectedRoleOption}
-                                onValueChange={handleRoleChange}
-                                defaultValue={selectedRoleOption}
-                            >
-                                <SelectTrigger className='w-full bg-white'>
-                                    {/* <SelectValue placeholder='Select a role' className='text-text' /> */}
-                                    <PoppinsText varient="default" weight='medium'>
-                                        {`${selectedRoleOption ? selectedRoleOption.label : 'Select a role'}`}
-                                    </PoppinsText>
-                                </SelectTrigger>
-                                <SelectContent className='w-full bg-primary-accent'>
-                                    <SelectGroup>
-                                        {/* <SelectLabel className='text-text'>Available Roles</SelectLabel> */}
-                                        {roleOptions.length ? (
-                                            roleOptions.map((roleOption) => (
-                                                <SelectItem
-                                                    key={roleOption.value}
-                                                    value={roleOption.value}
-                                                    label={roleOption.label}
-                                                    className='!bg-primary-accent hover:!bg-accent-hover focus:!bg-accent-hover active:!bg-accent-hover text-text'
-                                                />
-
-                                            ))
-                                        ) : (
-                                            <View className='px-4 py-4'>
-                                                <PoppinsText varient='subtext' className='text-center opacity-60' color='black'>
-                                                    No roles available
-                                                </PoppinsText>
-                                            </View>
-                                        )}
-                                    </SelectGroup>
-                                </SelectContent>
-                            </Select>
+                            <AppDropdown
+                                options={roleOptions}
+                                value={role}
+                                onValueChange={setRole}
+                                placeholder='Select a role'
+                                emptyText='No roles available'
+                                centered={true}
+                            />
                         </Column>
 
                         <Column gap={2}>
@@ -175,6 +146,9 @@ const UserEditDialog = ({
                             </AppButton>
                             <AppButton className='w-34 h-10' variant='outline-alt' onPress={handleCancel}>
                                 <PoppinsText color='black' weight='medium'>Cancel</PoppinsText>
+                            </AppButton>
+                            <AppButton className='w-34 h-10 border-2 border-red-500' variant='outline' onPress={handleDeleteUser}>
+                                <Text className='text-red-500 font-medium'>Delete User</Text>
                             </AppButton>
                         </Column>
                     </Column>

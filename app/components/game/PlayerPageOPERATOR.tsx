@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import PoppinsText from '../ui/text/PoppinsText';
 import { useUserList } from 'hooks/useUserList';
 import Column from '../layout/Column';
@@ -11,9 +11,10 @@ import { ScrollShadow } from 'heroui-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ScrollView, View } from 'react-native';
 import DaySelectionDialog from './DaySelectionDialog';
-import prettyLog from 'utils/prettyLog';
 import PoppinsNumberInput from '../ui/forms/PoppinsNumberInput';
-import PoppinsTextInput from '../ui/forms/PoppinsTextInput';
+import AppDropdown from '../ui/forms/AppDropdown';
+import { useUserList as useRoleList } from 'hooks/useUserList';
+import { RoleTableItem } from 'types/roleTable';
 
 
 
@@ -27,6 +28,22 @@ interface PlayerPageOPERATORProps {
 
 
 const PlayerPageOPERATOR = ({ currentUserId, gameId }: PlayerPageOPERATORProps) => {
+    // Demo popover role picker
+    const [demoRole, setDemoRole] = useState('');
+
+    const [roleTable] = useRoleList<RoleTableItem[]>({
+        key: "roleTable",
+        itemId: gameId,
+        privacy: "PUBLIC",
+    });
+
+    const demoRoleOptions = (roleTable?.value ?? [])
+        .filter((roleItem) => roleItem.role.trim().length > 0 && roleItem.isVisible !== false)
+        .map((roleItem) => ({
+            value: roleItem.role,
+            label: roleItem.role,
+        }));
+
     // const [startingDate] = useUserList({
     //     key: "startingDate",
     //     itemId: gameId,
@@ -135,7 +152,16 @@ const PlayerPageOPERATOR = ({ currentUserId, gameId }: PlayerPageOPERATORProps) 
 
 
 
+    const [isNewPlayerRowJustCreated, setIsNewPlayerRowJustCreated] = useState(false);
 
+    const HandleNewPlayer = () => {
+
+        setIsNewPlayerRowJustCreated(true);
+
+        addUser();
+
+
+    };
 
 
 
@@ -143,10 +169,21 @@ const PlayerPageOPERATOR = ({ currentUserId, gameId }: PlayerPageOPERATORProps) 
 
 
         <Column>
+            {/* Demo HeroUI Popover Role Picker */}
+            <Column className='p-4 border-b border-subtle-border'>
+                <PoppinsText weight='medium' className='mb-2'>Demo: Role Picker</PoppinsText>
+                <AppDropdown
+                    options={demoRoleOptions}
+                    value={demoRole}
+                    onValueChange={setDemoRole}
+                    placeholder='Select a role'
+                    emptyText='No roles available'
+                />
+            </Column>
 
             {users.length > 0 ? (
                 <Column>
-                    
+
                     <ScrollShadow LinearGradientComponent={LinearGradient} color="#fdfbf6" className='mr-1 pt-1'>
                         {/* <Row > */}
                         <ScrollView horizontal={true} className='px-1 py-5'>
@@ -163,6 +200,8 @@ const PlayerPageOPERATOR = ({ currentUserId, gameId }: PlayerPageOPERATORProps) 
                                             isBeingEdited={isPlayerTableBeingEdited}
                                             setIsBeingEdited={setIsPlayerTableBeingEdited}
                                             dayDatesArray={fixedDayDatesArray}
+                                            isNewPlayerRowJustCreated={isNewPlayerRowJustCreated}
+                                            setIsNewPlayerRowJustCreated={setIsNewPlayerRowJustCreated}
                                         />
                                     </Row>
                                 </Column>
@@ -222,7 +261,7 @@ const PlayerPageOPERATOR = ({ currentUserId, gameId }: PlayerPageOPERATORProps) 
                         {/* </Row> */}
 
                     </ScrollShadow>
-                    <AppButton variant="black" className='w-40 h-8 ml-4 -mt-6' onPress={addUser}>
+                    <AppButton variant="black" className='w-40 h-8 ml-4 -mt-6' onPress={HandleNewPlayer}>
                         <PoppinsText weight='bold' className='text-white text-xl'>+</PoppinsText>
                         <PoppinsText weight='bold' className='text-white'>Add Player</PoppinsText>
                     </AppButton>

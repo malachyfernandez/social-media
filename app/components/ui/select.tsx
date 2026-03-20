@@ -224,3 +224,5 @@ export {
   SelectValue,
   type Option,
 };
+
+export default Select;
