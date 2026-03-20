@@ -134,7 +134,7 @@ const NightlyDayUserRow = ({
                     onEditEnd={handleActionEditEnd}
                 />
             </Column>
-            <Column className={`w-32 h-full border border-subtle-border items-center justify-center ${isLast ? 'rounded-br-lg' : ''}`}>
+            <Column className={`w-64 h-full border border-subtle-border items-center justify-center ${isLast ? 'rounded-br-lg' : ''} ${editingResponse ? 'z-50' : ''}`}>
                 <InlineEditableText
                     value={getCurrentNightlyResponse()}
                     onChange={(newValue) => updateNightlyResponse(dayNumber, index, newValue)}
@@ -145,7 +145,7 @@ const NightlyDayUserRow = ({
                     onEditEnd={handleResponseEditEnd}
                 />
             </Column>
-            <Column gap={0} className={`w-32 h-full border border-subtle-border items-center justify-center ${isLast ? 'rounded-br-lg' : ''}`}>
+            <Column gap={0} className={`w-64 h-full border border-subtle-border items-center justify-center ${isLast ? 'rounded-br-lg' : ''}`}>
                 <InlineEditableText
                     value={getCurrentNightlyMessage()}
                     onChange={(newValue) => updateNightlyMessage(dayNumber, index, newValue)}
