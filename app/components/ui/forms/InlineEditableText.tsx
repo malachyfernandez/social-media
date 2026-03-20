@@ -37,6 +37,7 @@ const InlineEditableText = ({
 }: InlineEditableTextProps) => {
     const [isEditing, setIsEditing] = useState(false);
     const [editValue, setEditValue] = useState(value);
+    const [shouldSelect, setShouldSelect] = useState(false);
     const inputRef = useRef<TextInput>(null);
 
     const [fontsLoaded] = useFonts({
@@ -78,6 +79,7 @@ const InlineEditableText = ({
 
     const handlePress = () => {
         setIsEditing(true);
+        setShouldSelect(autoSelect);
         onEditStart?.();
         // Focus the input on next frame
         setTimeout(() => {
@@ -90,6 +92,7 @@ const InlineEditableText = ({
             onChange(editValue.trim());
         }
         setIsEditing(false);
+        setShouldSelect(false);
         onEditEnd?.();
     };
 
@@ -108,30 +111,39 @@ const InlineEditableText = ({
             <TextInput
                 ref={inputRef}
                 value={editValue}
-                onChangeText={setEditValue}
+                onChangeText={(text) => {
+                    setEditValue(text);
+                    // Clear selection after first character change
+                    if (shouldSelect) {
+                        setShouldSelect(false);
+                    }
+                }}
                 onSubmitEditing={handleSubmit}
                 onBlur={handleBlur}
                 onKeyPress={handleKeyPress}
                 placeholder={placeholder}
                 multiline
+                selection={shouldSelect ? { start: 0, end: editValue.length } : undefined}
                 className={`border-2 bg-white rounded-lg text-base focus:outline-none ${
                     compact 
                         ? 'border-blue-400 p-1' 
                         : 'border-blue-500 p-3'
                 }`}
-                style={{
-                    fontFamily: fontsLoaded ? getFontFamily() : undefined,
-                    color: 'text',
-                    minWidth: compact ? 80 : 160,
-                    minHeight: compact ? 24 : 60,
-                    maxWidth: compact ? 120 : 1600,
-                    maxHeight: compact ? 60 : 600,
-                    position: 'absolute',
-                    zIndex: 1000,
-                    fontSize: '0.9rem',
-                    textAlignVertical: 'center',
-                    ...style
-                }}
+                style={[
+                    {
+                        fontFamily: fontsLoaded ? getFontFamily() : undefined,
+                        color: '#000000',
+                        minWidth: compact ? 80 : 160,
+                        minHeight: compact ? 24 : 60,
+                        maxWidth: compact ? 120 : 1600,
+                        maxHeight: compact ? 60 : 600,
+                        position: 'absolute',
+                        zIndex: 1000,
+                        fontSize: 14,
+                        textAlignVertical: 'center',
+                    },
+                    style
+                ]}
                 placeholderTextColor="#9CA3AF"
             />
         );

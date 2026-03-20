@@ -122,7 +122,7 @@ const UserRow = ({ user, index, isLast, setLivingState, setExtraColumnValue, use
         executeCommand({
             action: () => deleteUser(userIndex),
             undoAction: () => setUserTable(userTable?.value),
-            description: "Change Living State"
+            description: "Deleted user"
         });
     };
 
@@ -204,7 +204,7 @@ const UserRow = ({ user, index, isLast, setLivingState, setExtraColumnValue, use
                 currentRole={user.role}
                 onPress={() => setIsDialogOpen(true)}
                 gameId={gameId}
-                onDelete={() => deleteUser(index)}
+                onDelete={() => UNDOABLEdeleteUser(index)}
             />
         </>
     );
