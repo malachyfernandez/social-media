@@ -181,18 +181,18 @@ const UserEditDialog = ({
                         </Column>
 
                         <Column className='w-full items-center justify-center'>
-                            <Column>
-                                <Row>
+                            <Column className='w-min'>
+                                <Row className='w-min max-w-full'>
                                 {isUniqueEmail ? (
-                                    <AppButton className='w-48 h-10' variant='black' onPress={handleSubmit}>
+                                    <AppButton className='max-w-[30vw] w-48 h-10' variant='black' onPress={handleSubmit}>
                                         <PoppinsText color='white' weight='medium'>Save</PoppinsText>
                                     </AppButton> 
                                 ) : (
-                                    <StatusButton className='w-48 h-10' buttonText='Save' buttonAltText='Repeated' />
+                                    <StatusButton className='max-w-[30vw]  w-48 h-10' buttonText='Save' buttonAltText='Repeated' />
                                     // <PoppinsText weight='medium'>Email already exists!</PoppinsText>
                                 )}
                                     
-                                    <AppButton className='w-48 h-10' variant='outline-alt' onPress={handleCancel}>
+                                    <AppButton className='max-w-[30vw] w-48 h-10' variant='outline-alt' onPress={handleCancel}>
                                         <PoppinsText color='black' weight='medium'>Cancel</PoppinsText>
                                     </AppButton>
                                 </Row>

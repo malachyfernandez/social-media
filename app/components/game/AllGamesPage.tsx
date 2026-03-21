@@ -5,14 +5,13 @@ import { useSyncUserData } from 'hooks/useSyncUserData';
 import Column from '../layout/Column';
 import { ScrollView } from 'react-native';
 import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated';
-import AppButton from '../ui/buttons/AppButton';
 import JoinGameButton from './JoinGameButton';
 import Row from '../layout/Row';
-import PoppinsText from '../ui/text/PoppinsText';
 import GameList from './GameList';
 import NoGames from './NoGames';
-import { GameInfo, MyGames } from 'types/games';
+import { MyGames } from 'types/games';
 import NewWolffspointButtonAndDialogue from './NewWolffspointButtonAndDialogue';
+import PublicImageUpload from './PublicImageUpload';
 
 interface AllGamesPageProps {
     activeGameId: string;
@@ -28,6 +27,7 @@ const AllGamesPage = ({
     addNewGame,
 }: AllGamesPageProps) => {
 
+    const [uploadedImageUrl, setUploadedImageUrl] = useState('');
 
     const [gamesTheyJoined, setGamesTheyJoined] = useUserVariable<string[]>({
         key: "gamesTheyJoined",
@@ -37,7 +37,6 @@ const AllGamesPage = ({
     const joinGame = (gameId: string) => {
         setGamesTheyJoined([...gamesTheyJoined.value, gameId]);
     };
-
 
     interface UserData {
         email?: string;
@@ -52,8 +51,6 @@ const AllGamesPage = ({
         searchKeys: ["name"],
     });
 
-    const userId = userData.value.userId || "";
-
     useSyncUserData(userData.value, setUserData);
 
     const hasJoinedAGame = (gamesTheyJoined?.value.length ? true : false);
@@ -62,10 +59,13 @@ const AllGamesPage = ({
     const isGamesPageEmpty = !hasJoinedAGame && !hasMadeAGame;
     const isGamesLoading = gamesTheyJoined?.state.isSyncing;
 
-
-
     return (
         <Column className='flex-1 h-full'>
+            <PublicImageUpload
+                url={uploadedImageUrl}
+                setUrl={setUploadedImageUrl}
+            />
+
             <Column className='flex-1 h-full'>
                 {!isGamesLoading && (
 
